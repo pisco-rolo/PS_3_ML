@@ -49,6 +49,6 @@ diff_vars_persona
 #----------------------------------------------------------------------------
 
 
-dataset_merged <- left_join(dataset_hog, dataset_p, by = c("id", "Clase", "Dominio") )
+data_merged_train <- left_join(data_hog, data_p, by = c("id", "Clase", "Dominio") )
 
 
