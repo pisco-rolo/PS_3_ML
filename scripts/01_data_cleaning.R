@@ -51,4 +51,74 @@ diff_vars_persona
 
 data_merged_train <- left_join(data_hog, data_p, by = c("id", "Clase", "Dominio") )
 
+# Predicción final, según documento será a nivel de hogar. Si son pobres o no. Y, predecir su ingreso monetario. 
+# Pero información sobre todo está en individuos. 
 
+# crear variables de región de residencia: andina, pacifico, caribe, amazonia, Bogota
+# Cabera
+table(data_kaggle_p$P6050)
+
+
+# Si el jefe de hogar no tiene empleo
+# Si la mayoria de adultos no tienen empleo --> usar  P6240: actividad principal 
+
+
+#-----------------------------------------
+# Preguntas dummy de algún tipo de ingreso:
+# Recibió primas: P6545
+# Recibió bonificaciones: P6580
+# Recibió Auxilio o subsidio de alimentación: P6585s1
+# Recibió Auxilio de subsidio de transporte:  P6585s2
+# Recibió Subsidio familiar: P6585s3
+# Recibió subsidio educativo: P6585s4
+# Además de salario, recibió alimentos como parte de pago: P6590
+# Además de salario, recibió vivienda como parte de pago: P6600
+# Utiliza transporte de la empresa para trasladarse: P6610
+# Además de salario, recibió ingresos en especie: P6620
+
+
+##
+# Emprendimiento,cuántas horas a la semana trabaja normalmente en ese trabajo: P6800
+# Cotiza actualmente en fondo de pensiones: P6920
+# 
+
+# Actividad secundaria. Otro trabajo o negocio: P7040
+# Num horas trabajo en actividad secundaria: P7045
+# Rol en esa actividad secundaria: P7050
+
+# quiere trabajar más horas? P7090
+# P7110
+# P7120
+# P7150 cambiar trabajo
+# P7160 poder empezar nuevo trabajo
+
+# P7310 ha buscado trabajo o ha trabajo al menos dos semanas
+# (preguntas para desocupados) #------------
+# P7350 su rol en este trabajo)
+# P7422 y P7472 (pgtas idénticas) recibió o ganó el mes pasado ingresos por trabajo?
+# ------------
+
+#----
+# P7495 Recibió pagos por arriendos y/o pensiones 
+# P7500s2  recibió b. pensiones o jubilación
+# P7500s3  recibió c. pensión alimenticia por paternidad, divorcio,etc
+#----
+
+#---------------
+# P7505 En último año, recibió dinero de otros hogares, personas, instituciones gub, por intereses, dividendos
+# utilidades o por cesantías? 
+# #
+#---------------
+
+
+
+
+
+
+
+
+
+
+
+
+# cómo agregar los datos? a nivel de porcentajes por miembros del hogar
