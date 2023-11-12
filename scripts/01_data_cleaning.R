@@ -107,9 +107,24 @@ table(data_kaggle_p$P6050)
 #---------------
 # P7505 En último año, recibió dinero de otros hogares, personas, instituciones gub, por intereses, dividendos
 # utilidades o por cesantías? 
-# #
+# # P7510s1  a. dinero de otros hogares residentes en el país
+# # P7510s2  b. dinero de otros hogares residentes fuera del país
+# # P7510s3  c. ayudas en dinero de instituciones del país
+# # P7510s5  d. dinero por intereses de préstamos o CDT's
+# # P7510s6  e. dinero por concepto de cesantías
+# # P7510s7  f. dinero de otras fuentes diferentes a las anteriores
 #---------------
 
+# Pet: población en edad de trabajar  1:sí
+# Oc: ocupado 1:sí
+# Des: desocupado 1:sí
+# Ina: Inactivo 1:sí
+
+
+
+# Fex_c: Factor de expansión anualizado
+# Dpto: Departamento
+# Fex_dpto: Factor de expansión departamental
 
 
 
