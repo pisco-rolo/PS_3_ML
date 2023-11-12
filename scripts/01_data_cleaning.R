@@ -59,12 +59,30 @@ data_merged_train <- left_join(data_hog, data_p, by = c("id", "Clase", "Dominio"
 table(data_kaggle_p$P6050)
 
 
+# Caracterización
+# P6020: Sexo
+# P6040: años cumplidos
+# P6050: Parentezco con jefe de hogar
+# P6090: Cotizante de alguna entidad seguridad social
+# P6100: regímen de seguridad social afiliado
+# P6210: Nivel educativo más alto aprobado
+# P6210s1: Grado escolar aprobado
+
+
+#------------------------------------
+# Oficio
+
+
 # Si el jefe de hogar no tiene empleo
 # Si la mayoria de adultos no tienen empleo --> usar  P6240: actividad principal 
+
+# P6426: tiempo trabajando en actividad principal
+# P6430: Rol en actividad principal
 
 
 #-----------------------------------------
 # Preguntas dummy de algún tipo de ingreso:
+# Recibió ingresos por horas extras: P6510
 # Recibió primas: P6545
 # Recibió bonificaciones: P6580
 # Recibió Auxilio o subsidio de alimentación: P6585s1
