@@ -24,7 +24,7 @@ table(data_hog$Dominio)
 
 #----------------------------------------------------------------------------
 # Variables que podriamos extraer de Personas
-# Estrato1 , 
+
 
 #----------------------------------------------------------------------------
 # Variables que estan en train y no test
@@ -47,7 +47,8 @@ diff_vars_persona
 # Basicamente se borraron todas las variables cuantitativas de algún tipo de ingreso.
 
 #----------------------------------------------------------------------------
-
+#
+table(data_hog$Npersug)
 
 data_merged_train <- left_join(data_hog, data_p, by = c("id", "Clase", "Dominio") )
 
@@ -59,15 +60,35 @@ data_merged_train <- left_join(data_hog, data_p, by = c("id", "Clase", "Dominio"
 table(data_kaggle_p$P6050)
 
 
+#------------------------------------
 # Caracterización
 # P6020: Sexo
+# 
+
 # P6040: años cumplidos
 # P6050: Parentezco con jefe de hogar
 # P6090: Cotizante de alguna entidad seguridad social
-# P6100: regímen de seguridad social afiliado
+# P6100: regímen de seguridad social afiliado // no importa
+
 # P6210: Nivel educativo más alto aprobado
 # P6210s1: Grado escolar aprobado
 
+
+table(data_p$P6050)
+table 
+# Dummy de jefe de hogar mujeres 
+data_p$jef_hog_mujer <- ifelse(data_p$P6050 == 1 & data_p$P6020 == 2 , 1 , 0) 
+
+# Dummy de personas menores de 18 años 
+# /posible interacción de estas dos
+data_p$dependientes <- ifelse(data_p$P6040 <= 18  , 1 , 0) 
+
+
+#edad promedio de los miembros del hogar. 
+
+data_p <- data_p %>% 
+  group_by(id) %>%
+  mutate(mean_years_hog = mean(data_p$P6040 , na.rm = TRUE) )             # CORREGIR
 
 #------------------------------------
 # Oficio
@@ -85,10 +106,42 @@ table(data_kaggle_p$P6050)
 # Recibió ingresos por horas extras: P6510
 # Recibió primas: P6545
 # Recibió bonificaciones: P6580
+
+#------------------------------------------------------- SUBSIDIOS
 # Recibió Auxilio o subsidio de alimentación: P6585s1
 # Recibió Auxilio de subsidio de transporte:  P6585s2
 # Recibió Subsidio familiar: P6585s3
 # Recibió subsidio educativo: P6585s4
+
+# # P7510s3  c. ayudas en dinero de instituciones del país     
+data_p <- data_p %>%
+  mutate(un_subsidio = ifelse(P6585s1 == 1 | P6585s2 == 1 | P6585s3 == 1 | P6585s4 == 1 | P7510s3 == 1  , 1, 0 ))
+
+table(data_p$P6585s1)
+table(data_p$P7510s3)
+
+# convertiremos datos de subsidios a dummy 0 - 1 para facilitar la suma
+
+data_p <- data_p %>%
+  mutate(P6585s1 = ifelse(P6585s1 == 2 | P6585s1 == 9 , 0 , P6585s1 )) %>%
+  mutate(P6585s2 = ifelse(P6585s2 == 2 | P6585s2 == 9 , 0 , P6585s2 )) %>%
+  mutate(P6585s3 = ifelse(P6585s3 == 2 | P6585s3 == 9 , 0 , P6585s3 )) %>%
+  mutate(P6585s4 = ifelse(P6585s4 == 2 | P6585s4 == 9 , 0 , P6585s4 )) %>%
+  mutate(P7510s3 = ifelse(P7510s3 == 2 | P7510s3 == 9 , 0 , P7510s3 ))
+
+
+data_p <- data_p %>%
+  mutate(multi_subsidios = (P6585s1 + P6585s2 +  P6585s3 + P6585s4 + P7510s3 ))
+
+data_p <- data_p %>% 
+  mutate(prop_subsi)
+
+
+# pendiente. DATO SOBRE EL HOGAR
+#--------------------------------------------------------------------
+
+
+
 # Además de salario, recibió alimentos como parte de pago: P6590
 # Además de salario, recibió vivienda como parte de pago: P6600
 # Utiliza transporte de la empresa para trasladarse: P6610
@@ -97,7 +150,15 @@ table(data_kaggle_p$P6050)
 
 ##
 # Emprendimiento,cuántas horas a la semana trabaja normalmente en ese trabajo: P6800
-# Cotiza actualmente en fondo de pensiones: P6920
+
+# Cotiza actualmente en fondo de pensiones: P6920 ---- //// suma de dummys / miembros del hogar
+#------------------------------------- Suma de dummy / miembro que trabajan 
+# ------------------------------------ Suma de dummy / miembros en edad de trabajar 
+
+# SUMA Personas dependientes / numero de personas que trabajan 
+
+# 
+
 # 
 
 # Actividad secundaria. Otro trabajo o negocio: P7040
@@ -127,7 +188,9 @@ table(data_kaggle_p$P6050)
 # utilidades o por cesantías? 
 # # P7510s1  a. dinero de otros hogares residentes en el país
 # # P7510s2  b. dinero de otros hogares residentes fuera del país
-# # P7510s3  c. ayudas en dinero de instituciones del país
+
+# # P7510s3  c. ayudas en dinero de instituciones del país           ////si
+
 # # P7510s5  d. dinero por intereses de préstamos o CDT's
 # # P7510s6  e. dinero por concepto de cesantías
 # # P7510s7  f. dinero de otras fuentes diferentes a las anteriores
@@ -145,13 +208,44 @@ table(data_kaggle_p$P6050)
 # Fex_dpto: Factor de expansión departamental
 
 
+#----------------------------------------------------------
+# HOGAR
+# P5000 
 
+# P5010: cuartos que pueden dormir
+# CALCULAR--> número de personas que duermen por cuarto
+# P5090: si es propietaria de sus propia casa. Usar dummys.  // 
 
+# P5100: cuanto pagas por amortización //no incluir
 
+# consolidar estas dos variables en una
+# P5130: estimación si tuviera que pagar arriendo //
+# P5140: estimación del arriendo  // SI queda. 
 
+# Nper sí
+# Npersug // NO VA 
 
+# 
+summary(data_hog$Li)
+summary(data_kaggle_hog$Li)
 
+summary(data_hog$Lp)
+summary(data_kaggle_hog$Lp)
 
+sort(unique(data_kaggle_hog$Lp))
+
+# dummy de departamento
 
 
 # cómo agregar los datos? a nivel de porcentajes por miembros del hogar
+
+#--------------------------------------------------------
+# construcción de la variable dependiente para predecir ingresos a nivel per capita (unidad de gasto)
+# construir  Ingtotug  + (reciben ingreso) arriendo / Nper
+
+# en caso  ingtotutgarr - ingtotug > 0 , ingtotutgarr, ingtotug   
+sum(data_hog$Ingtotugarr - data_hog$Ingtotug == 0)
+
+
+
+sum(data_hog$ingtotutgarr) # QUEDA ESTA VARIABLE PARA PREDECIR.
