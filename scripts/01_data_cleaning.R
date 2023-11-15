@@ -76,19 +76,73 @@ table(data_kaggle_p$P6050)
 
 table(data_p$P6050)
 table 
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 # Dummy de jefe de hogar mujeres 
-data_p$jef_hog_mujer <- ifelse(data_p$P6050 == 1 & data_p$P6020 == 2 , 1 , 0) 
+#data_p$jef_hog_mujer <- ifelse(data_p$P6050 == 1 & data_p$P6020 == 2 , 1 , 0) 
 
-# Dummy de personas menores de 18 años 
-# /posible interacción de estas dos
-data_p$dependientes <- ifelse(data_p$P6040 <= 18  , 1 , 0) 
+data_p <- data_p %>% 
+  group_by(id) %>%
+  mutate( jef_hog_mujer = ifelse(P6050 == 1 & P6020 == 2 , 1 , 0)  )
 
+
+# explorando esposos hombres y no jefes de hogar
+table(data_p$jef_hog_mujer)
+
+table(data_p$P6050[data_p$P6020 == 1] )
+table
+
+
+# dummy de hombres que son pareja del jefe de hogar mujer
+data_p <- data_p %>% 
+  group_by(id) %>%
+  mutate(pareja_nojef_hombre = ifelse(P6050==2 & P6020==1 , 1 ,0)  )
+
+table(data_p$pareja_nojef_hombre[data_p$jef_hog_mujer==0])
+
+
+# Dummy de personas menores de 18 años en el hogar
+data_p$menores18 <- ifelse(data_p$P6040 <= 18  , 1 , 0) 
+
+data_p <- data_p %>% 
+  group_by(id) %>%
+  mutate(menores18 =  ifelse(menores18 == 1  , 1 , 0) )
+
+table(data_p$menores18)
+
+
+# dummy de madre soltera (mujer jefa de hogar sin pareja hombre, ojo: sin considerar si hay menores en la casa)
+data_p <- data_p %>% 
+  group_by(id) %>%
+  mutate(madre_soltera = ifelse(jef_hog_mujer == 1 & pareja_nojef_hombre == 0 , 1 , 0))
+
+table(data_p$madre_soltera) 
+# comprobamos que todas las mujeres jefe de hogar no tienen una pareja hombre 
+
+
+#////////////////////////////////////////////////////////////////////
+# dummy de madre soltera y le agregamos hijos
+data_p <- data_p %>% 
+  group_by(id) %>%
+  mutate(madre_soltera = ifelse(jef_hog_mujer == 1 & pareja_nojef_hombre == 0 & menores18 == 1 , 1 , 0))
+
+table(data_p$madre_soltera)  # solo hay 344 observaciones de madres solteras con menores de 18 en la casa
+#////////////////////////////////////////////////////////////////////
 
 #edad promedio de los miembros del hogar. 
 
 data_p <- data_p %>% 
   group_by(id) %>%
-  mutate(mean_years_hog = mean(data_p$P6040 , na.rm = TRUE) )             # CORREGIR
+  mutate( mean_years_hog = round( mean(P6040 , na.rm = TRUE), 1) )             
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+
 
 #------------------------------------
 # Oficio
