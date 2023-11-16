@@ -21,11 +21,6 @@ table(data_hog$Fex_dpto)
 table(data_hog$Clase)
 table(data_hog$Dominio)
 
-
-#----------------------------------------------------------------------------
-# Variables que podriamos extraer de Personas
-
-
 #----------------------------------------------------------------------------
 # Variables que estan en train y no test
 # HOGAR
@@ -86,20 +81,19 @@ table
 
 data_p <- data_p %>% 
   group_by(id) %>%
-  mutate( jef_hog_mujer = ifelse(P6050 == 1 & P6020 == 2 , 1 , 0)  )
+  mutate( jef_hog_mujer = ifelse(any(P6050 == 1 & P6020 == 2) , 1 , 0)  )
 
 
 # explorando esposos hombres y no jefes de hogar
 table(data_p$jef_hog_mujer)
 
 table(data_p$P6050[data_p$P6020 == 1] )
-table
 
 
 # dummy de hombres que son pareja del jefe de hogar mujer
 data_p <- data_p %>% 
   group_by(id) %>%
-  mutate(pareja_nojef_hombre = ifelse(P6050==2 & P6020==1 , 1 ,0)  )
+  mutate(pareja_nojef_hombre = ifelse(any(P6050==2 & P6020==1) , 1 ,0)  )
 
 table(data_p$pareja_nojef_hombre[data_p$jef_hog_mujer==0])
 
@@ -109,7 +103,7 @@ data_p$menores18 <- ifelse(data_p$P6040 <= 18  , 1 , 0)
 
 data_p <- data_p %>% 
   group_by(id) %>%
-  mutate(menores18 =  ifelse(menores18 == 1  , 1 , 0) )
+  mutate(bin_menores18 =  ifelse(any(menores18 == 1 ) , 1 , 0) )
 
 table(data_p$menores18)
 
@@ -117,7 +111,7 @@ table(data_p$menores18)
 # dummy de madre soltera (mujer jefa de hogar sin pareja hombre, ojo: sin considerar si hay menores en la casa)
 data_p <- data_p %>% 
   group_by(id) %>%
-  mutate(madre_soltera = ifelse(jef_hog_mujer == 1 & pareja_nojef_hombre == 0 , 1 , 0))
+  mutate(madre_soltera = ifelse(any(jef_hog_mujer == 1 & pareja_nojef_hombre == 0) , 1 , 0))
 
 table(data_p$madre_soltera) 
 # comprobamos que todas las mujeres jefe de hogar no tienen una pareja hombre 
@@ -127,7 +121,7 @@ table(data_p$madre_soltera)
 # dummy de madre soltera y le agregamos hijos
 data_p <- data_p %>% 
   group_by(id) %>%
-  mutate(madre_soltera = ifelse(jef_hog_mujer == 1 & pareja_nojef_hombre == 0 & menores18 == 1 , 1 , 0))
+  mutate(madre_soltera = ifelse(any(jef_hog_mujer == 1 & pareja_nojef_hombre == 0 & menores18 == 1) , 1 , 0))
 
 table(data_p$madre_soltera)  # solo hay 344 observaciones de madres solteras con menores de 18 en la casa
 #////////////////////////////////////////////////////////////////////
@@ -142,11 +136,8 @@ data_p <- data_p %>%
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-
-
 #------------------------------------
 # Oficio
-
 
 # Si el jefe de hogar no tiene empleo
 # Si la mayoria de adultos no tienen empleo --> usar  P6240: actividad principal 
@@ -204,71 +195,11 @@ data_p <- data_p %>%
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-
-# pendiente. DATO SOBRE EL HOGAR
 #--------------------------------------------------------------------
-
-
-
-# Además de salario, recibió alimentos como parte de pago: P6590
-# Además de salario, recibió vivienda como parte de pago: P6600
-# Utiliza transporte de la empresa para trasladarse: P6610
-# Además de salario, recibió ingresos en especie: P6620
-
-
-##
-# Emprendimiento,cuántas horas a la semana trabaja normalmente en ese trabajo: P6800
-
-# Cotiza actualmente en fondo de pensiones: P6920 ---- //// suma de dummys / miembros del hogar
-#------------------------------------- Suma de dummy / miembro que trabajan 
-# ------------------------------------ Suma de dummy / miembros en edad de trabajar 
-
-# SUMA Personas dependientes / numero de personas que trabajan 
-
-# 
-
-# 
-
-# Actividad secundaria. Otro trabajo o negocio: P7040
-# Num horas trabajo en actividad secundaria: P7045
-# Rol en esa actividad secundaria: P7050
-
-# quiere trabajar más horas? P7090
-# P7110
-# P7120
-# P7150 cambiar trabajo
-# P7160 poder empezar nuevo trabajo
-
-# P7310 ha buscado trabajo o ha trabajo al menos dos semanas
-# (preguntas para desocupados) #------------
-# P7350 su rol en este trabajo)
-# P7422 y P7472 (pgtas idénticas) recibió o ganó el mes pasado ingresos por trabajo?
-# ------------
-
-#----
-# P7495 Recibió pagos por arriendos y/o pensiones 
-# P7500s2  recibió b. pensiones o jubilación
-# P7500s3  recibió c. pensión alimenticia por paternidad, divorcio,etc
-#----
-
-#---------------
-# P7505 En último año, recibió dinero de otros hogares, personas, instituciones gub, por intereses, dividendos
-# utilidades o por cesantías? 
-# # P7510s1  a. dinero de otros hogares residentes en el país
-# # P7510s2  b. dinero de otros hogares residentes fuera del país
-
-# # P7510s3  c. ayudas en dinero de instituciones del país           ////si
-
-# # P7510s5  d. dinero por intereses de préstamos o CDT's
-# # P7510s6  e. dinero por concepto de cesantías
-# # P7510s7  f. dinero de otras fuentes diferentes a las anteriores
-#---------------
-
 # Pet: población en edad de trabajar  1:sí
 # Oc: ocupado 1:sí
 # Des: desocupado 1:sí
 # Ina: Inactivo 1:sí
-
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -279,6 +210,10 @@ table(data_p$Pet)
 
 # Proporción de la familia que trabaja (excluyendo a mayores de 18 años)
 data_p$Pet_mayores <- ifelse(data_p$Pet == 1 & data_p$P6040 >= 18 , 1 , 0)
+#///////////////////////////////////////////////////////////////////////////////// ojo acá podría usar "Ocupados" Oc
+table(data_p$Oc)
+table(data_p$P6240)
+
 
 data_p <- data_p %>%
   group_by(id) %>%
@@ -286,17 +221,79 @@ data_p <- data_p %>%
   mutate(total_pet12 = sum(Pet))             
 
 
+# Cotiza actualmente en fondo de pensiones: P6920
+# Proporción de personas que tienen un trabajo formal hoy (proxy: cotizan hoy fondo de pensión)
+table(data_p$P6920)
+# Quitaremos a los ya pensionados, pues en Colombia 1 de cada 4 mayores accede a pensión.
+data_p$P6920 <- ifelse(data_p$P6920 == 2 | data_p$P6920 == 3 | is.na(data_p$P6920) , 0 , 1 )
+
+# Sumamos miembros por hogar que cotizan
+data_p <- data_p %>%
+  group_by(id) %>%
+  mutate(tot_cotizan = sum(P6920))
+
+
+# ---------------------------
+# Actividad principal de las personas 
+table(data_p$P6240)
+
+data_p$working <-  ifelse(data_p$P6240 == 1 , 1 , 0) 
+data_p$working <- ifelse(is.na(data_p$working) , 0 , data_p$working )
+# total de personas que trabajan en la familia
+data_p <- data_p %>%
+  group_by(id) %>%
+  mutate(tot_workers = sum(working))
+
+# Total de dependientes en el hogar. Sumaremos a los menores de 18 años en el hogar
+data_p$menor18
+
+data_p <- data_p %>%
+  group_by(id) %>%
+  mutate(tot_menores = sum(menores18))
+
+summary(data_p$prop_dep_workers)
+table(data_p$tot_workers)
+
+
+# Proporción de personas dependientes vs personas con trabajos en el hogar
+data_p <- data_p %>% 
+  group_by(id) %>%
+  mutate(prop_dep_workers = tot_menores / tot_workers )
+summary(data_p$prop_dep_workers) #ojo: 33704 NA's  y hay mean "Inf"
+## este dato_ de prop_dep_workers hace que se pierdan observaciones del resto de variables al utilizar aggregate
+# ---------------------------
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Variables creadas a nivel hogar que me quedo
+# jef_hog_mujer   madre_soltera  mean_years_hog  prop_dep_workers
 
 #Variables que faltan dividir por el número de miembros del hogar
-# sum_un_subsidio tot_subsidios  total_pet_mayores total_pet12
+# sum_un_subsidio tot_subsidios  total_pet_mayores total_pet12  tot_cotizan  tot_workers
+
+
+# agregamos los datos
+data_p_ag <- aggregate(cbind(jef_hog_mujer, madre_soltera, mean_years_hog,  # quito esta prop_dep_workers para no perder obs
+                             sum_un_subsidio, tot_subsidios,  total_pet_mayores, total_pet12,
+                             tot_cotizan, tot_workers) ~ id, data = data_p, FUN = mean  ) # mean no afecta porque ya está agregado
+
+# merge de datos de hogar y personas
+data_hog <- merge(data_hog, data_p_ag, by = "id", all = TRUE)
+
+# -----------------------------------------------------------------------------
+# generación de datos pendientes por miembros del hogar
+
+data_hog <- data_hog %>%
+  mutate(prop_un_subsidio = sum_un_subsidio / Nper ) %>%
+  mutate(prop_multi_subsidios = tot_subsidios / Nper ) %>%
+  mutate(prop_pet_mayores = total_pet_mayores / Nper) %>%
+  mutate(prop_pet12 =  total_pet12 / Nper) %>%
+  mutate(prop_cotizan = tot_cotizan / Nper) %>%
+  mutate(prop_workers = tot_workers / Nper)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-
-
-
-
 
 
 # Fex_c: Factor de expansión anualizado
@@ -310,30 +307,22 @@ data_p <- data_p %>%
 
 # P5010: cuartos que pueden dormir
 # CALCULAR--> número de personas que duermen por cuarto
-# P5090: si es propietaria de sus propia casa. Usar dummys.  // 
+data_hog$per_bedrooms <- data_hog$P5010 / data_hog$Nper
 
+# P5090: si es propietaria de sus propia casa. Usar dummys.  // 
 # P5100: cuanto pagas por amortización //no incluir
 
-# consolidar estas dos variables en una
+# Estimación consolidada de arriendo aproximada, considera las dos variables:
 # P5130: estimación si tuviera que pagar arriendo //
 # P5140: estimación del arriendo  // SI queda. 
+summary(data_hog$P5130)
+data_hog$tot_arriendo <- ifelse(is.na(data_hog$P5130), data_hog$P5140, data_hog$P5130 )
+summary(data_hog$tot_arriendo)
+
 
 # Nper sí
 # Npersug // NO VA 
-
-# 
-summary(data_hog$Li)
-summary(data_kaggle_hog$Li)
-
-summary(data_hog$Lp)
-summary(data_kaggle_hog$Lp)
-
-sort(unique(data_kaggle_hog$Lp))
-
 # dummy de departamento
-
-
-# cómo agregar los datos? a nivel de porcentajes por miembros del hogar
 
 #--------------------------------------------------------
 # construcción de la variable dependiente para predecir ingresos a nivel per capita (unidad de gasto)
@@ -341,7 +330,5 @@ sort(unique(data_kaggle_hog$Lp))
 
 # en caso  ingtotutgarr - ingtotug > 0 , ingtotutgarr, ingtotug   
 sum(data_hog$Ingtotugarr - data_hog$Ingtotug == 0)
-
-
 
 sum(data_hog$ingtotutgarr) # QUEDA ESTA VARIABLE PARA PREDECIR.
