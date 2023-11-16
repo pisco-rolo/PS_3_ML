@@ -168,28 +168,42 @@ data_p <- data_p %>%
 # Recibió subsidio educativo: P6585s4
 
 # # P7510s3  c. ayudas en dinero de instituciones del país     
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Dummy si recibió alguno de los subsidios 
 data_p <- data_p %>%
-  mutate(un_subsidio = ifelse(P6585s1 == 1 | P6585s2 == 1 | P6585s3 == 1 | P6585s4 == 1 | P7510s3 == 1  , 1, 0 ))
+  mutate(un_subsidio = ifelse(P6585s1 == 1 | P6585s2 == 1 | P6585s3 == 1 | P6585s4 == 1 | P7510s3 == 1  , 1, 0 )) %>%
+    mutate(un_subsidio = ifelse(is.na(un_subsidio), 0 , un_subsidio ))
+
+# Sumo las dummys de al menos un subsidio
+data_p <- data_p %>% 
+  group_by(id) %>%
+  mutate(sum_un_subsidio = sum(un_subsidio)  )  ## Falta dividir por número de miembros hogar 
 
 table(data_p$P6585s1)
 table(data_p$P7510s3)
 
 # convertiremos datos de subsidios a dummy 0 - 1 para facilitar la suma
-
 data_p <- data_p %>%
-  mutate(P6585s1 = ifelse(P6585s1 == 2 | P6585s1 == 9 , 0 , P6585s1 )) %>%
-  mutate(P6585s2 = ifelse(P6585s2 == 2 | P6585s2 == 9 , 0 , P6585s2 )) %>%
-  mutate(P6585s3 = ifelse(P6585s3 == 2 | P6585s3 == 9 , 0 , P6585s3 )) %>%
-  mutate(P6585s4 = ifelse(P6585s4 == 2 | P6585s4 == 9 , 0 , P6585s4 )) %>%
-  mutate(P7510s3 = ifelse(P7510s3 == 2 | P7510s3 == 9 , 0 , P7510s3 ))
+  mutate(P6585s1 = ifelse(P6585s1 == 2 | P6585s1 == 9 | is.na(P6585s1) , 0 , P6585s1 )) %>%
+  mutate(P6585s2 = ifelse(P6585s2 == 2 | P6585s2 == 9 | is.na(P6585s2) , 0 , P6585s2 )) %>%
+  mutate(P6585s3 = ifelse(P6585s3 == 2 | P6585s3 == 9 | is.na(P6585s3) , 0 , P6585s3 )) %>%
+  mutate(P6585s4 = ifelse(P6585s4 == 2 | P6585s4 == 9 | is.na(P6585s4) , 0 , P6585s4 )) %>%
+  mutate(P7510s3 = ifelse(P7510s3 == 2 | P7510s3 == 9 | is.na(P7510s3) , 0 , P7510s3 ))
 
 
 data_p <- data_p %>%
   mutate(multi_subsidios = (P6585s1 + P6585s2 +  P6585s3 + P6585s4 + P7510s3 ))
 
 data_p <- data_p %>% 
-  mutate(prop_subsi)
+  group_by(id) %>%
+  mutate(tot_subsidios = sum(multi_subsidios))   ## Falta dividir por número de miembros hogar 
 
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # pendiente. DATO SOBRE EL HOGAR
 #--------------------------------------------------------------------
@@ -254,6 +268,34 @@ data_p <- data_p %>%
 # Oc: ocupado 1:sí
 # Des: desocupado 1:sí
 # Ina: Inactivo 1:sí
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Proporción de la familia que trabaja (incluyendo mayores a 12 años)
+data_p$Pet <- ifelse(is.na(data_p$Pet), 0 , data_p$Pet)
+table(data_p$Pet)
+
+
+# Proporción de la familia que trabaja (excluyendo a mayores de 18 años)
+data_p$Pet_mayores <- ifelse(data_p$Pet == 1 & data_p$P6040 >= 18 , 1 , 0)
+
+data_p <- data_p %>%
+  group_by(id) %>%
+  mutate(total_pet_mayores = sum(Pet_mayores)) %>%
+  mutate(total_pet12 = sum(Pet))             
+
+
+
+#Variables que faltan dividir por el número de miembros del hogar
+# sum_un_subsidio tot_subsidios  total_pet_mayores total_pet12
+
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+
+
 
 
 
