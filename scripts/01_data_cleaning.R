@@ -247,7 +247,7 @@ data_p <- data_p %>%
   mutate(tot_workers = sum(working, na.rm = TRUE))
 
 # Total de dependientes en el hogar. Sumaremos a los menores de 18 años en el hogar
-data_p$menor18
+summary(data_p$menores18)
 
 data_p <- data_p %>%
   group_by(id) %>%
