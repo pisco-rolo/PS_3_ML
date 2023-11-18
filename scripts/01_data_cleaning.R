@@ -69,9 +69,6 @@ table(data_kaggle_p$P6050)
 # P6210s1: Grado escolar aprobado
 
 
-table(data_p$P6050)
-table 
-
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -213,9 +210,8 @@ table(data_p$Pet)
 # Proporción de la familia que trabaja (excluyendo a mayores de 18 años)
 data_p$Pet_mayores <- ifelse(data_p$Pet == 1 & data_p$P6040 >= 18 , 1 , 0)
 #///////////////////////////////////////////////////////////////////////////////// ojo acá podría usar "Ocupados" Oc
-table(data_p$Oc)
-table(data_p$P6240)
-
+data_p$Oc <- ifelse(is.na(data_p$Oc), 0 , data_p$Oc)
+table(data_p$Oc,data_p$P6240)  ## Todos las personas "Trabajando" están como ocupados. 
 
 data_p <- data_p %>%
   group_by(id) %>%
@@ -236,10 +232,9 @@ data_p <- data_p %>%
 
 
 # ---------------------------
-# Actividad principal de las personas 
-table(data_p$P6240)
-
-data_p$working <-  ifelse(data_p$P6240 == 1 , 1 , 0) 
+# Personas ocupadas
+table(data_p$Oc)
+data_p$working <-  ifelse(data_p$Oc == 1 , 1 , 0) 
 data_p$working <- ifelse(is.na(data_p$working) , 0 , data_p$working )
 # total de personas que trabajan en la familia
 data_p <- data_p %>%
