@@ -88,6 +88,8 @@ data_p <- data_p %>%
 table(data_p$jef_hog_mujer)
 
 table(data_p$P6050[data_p$P6020 == 1] )
+table(data_p$P6050[data_p$P6020 == 2] )  
+# c. hijo d.nieto  #92k tienen hijo
 
 
 # dummy de hombres que son pareja del jefe de hogar mujer
@@ -95,7 +97,7 @@ data_p <- data_p %>%
   group_by(id) %>%
   mutate(pareja_nojef_hombre = ifelse(any(P6050==2 & P6020==1) , 1 ,0)  )
 
-table(data_p$pareja_nojef_hombre[data_p$jef_hog_mujer==0])
+table(data_p$pareja_nojef_hombre[data_p$jef_hog_mujer==1])
 
 
 # Dummy de personas menores de 18 años en el hogar
@@ -111,7 +113,7 @@ table(data_p$menores18)
 # dummy de madre soltera (mujer jefa de hogar sin pareja hombre, ojo: sin considerar si hay menores en la casa)
 data_p <- data_p %>% 
   group_by(id) %>%
-  mutate(madre_soltera = ifelse(any(jef_hog_mujer == 1 & pareja_nojef_hombre == 0) , 1 , 0))
+  mutate(madre_soltera = ifelse(any(jef_hog_mujer == 1 & pareja_nojef_hombre == 1) , 1 , 0))
 
 table(data_p$madre_soltera) 
 # comprobamos que todas las mujeres jefe de hogar no tienen una pareja hombre 
@@ -121,9 +123,9 @@ table(data_p$madre_soltera)
 # dummy de madre soltera y le agregamos hijos
 data_p <- data_p %>% 
   group_by(id) %>%
-  mutate(madre_soltera = ifelse(any(jef_hog_mujer == 1 & pareja_nojef_hombre == 0 & menores18 == 1) , 1 , 0))
+  mutate(madre_soltera = ifelse(any(jef_hog_mujer == 1 & pareja_nojef_hombre == 1 & menores18 == 1) , 1 , 0))
 
-table(data_p$madre_soltera)  # solo hay 344 observaciones de madres solteras con menores de 18 en la casa
+table(data_p$madre_soltera)  # solo hay 44959 observaciones de madres solteras con menores de 18 en la casa
 #////////////////////////////////////////////////////////////////////
 
 #edad promedio de los miembros del hogar. 
@@ -242,16 +244,16 @@ data_p$working <- ifelse(is.na(data_p$working) , 0 , data_p$working )
 # total de personas que trabajan en la familia
 data_p <- data_p %>%
   group_by(id) %>%
-  mutate(tot_workers = sum(working))
+  mutate(tot_workers = sum(working, na.rm = TRUE))
 
 # Total de dependientes en el hogar. Sumaremos a los menores de 18 años en el hogar
 data_p$menor18
 
 data_p <- data_p %>%
   group_by(id) %>%
-  mutate(tot_menores = sum(menores18))
+  mutate(tot_menores = sum(menores18, na.rm = TRUE)) 
 
-summary(data_p$prop_dep_workers)
+#summary(data_p$prop_dep_workers)
 table(data_p$tot_workers)
 
 
@@ -262,6 +264,14 @@ data_p <- data_p %>%
 summary(data_p$prop_dep_workers) #ojo: 33704 NA's  y hay mean "Inf"
 ## este dato_ de prop_dep_workers hace que se pierdan observaciones del resto de variables al utilizar aggregate
 # ---------------------------
+
+
+##//////////////////////////////////
+# crear una dummy de trabajador_actual <- que sea 1 si la persona está ocupada o está "trabajando" como actividad principal"
+
+
+
+
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
