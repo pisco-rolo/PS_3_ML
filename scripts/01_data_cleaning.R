@@ -26,7 +26,7 @@ table(data_hog$Dominio)
 # HOGAR
 names(data_hog)
 names(data_kaggle_hog)
-diff_vars_hog <- setdiff(names(data_hog), names(data_kaggle_hog))
+diff_vars_hog <- base::setdiff(names(data_hog), names(data_kaggle_hog))
 diff_vars_hog
 # "Ingtotug"    "Ingtotugarr" "Ingpcug"  "Pobre"       "Indigente"   "Npobres"     "Nindigentes"
 
@@ -36,7 +36,7 @@ diff_vars_hog
 names(data_p)
 names(data_kaggle_p)
 #conflicted::conflicts_prefer(base::setdiff)
-diff_vars_persona <- setdiff(names(data_p), names(data_kaggle_p))
+diff_vars_persona <- base::setdiff(names(data_p), names(data_kaggle_p))
 diff_vars_persona
 
 # Basicamente se borraron todas las variables cuantitativas de algún tipo de ingreso.
@@ -96,7 +96,6 @@ data_p <- data_p %>%
 
 table(data_p$pareja_nojef_hombre[data_p$jef_hog_mujer==1])
 
-
 # Dummy de personas menores de 18 años en el hogar
 data_p$menores18 <- ifelse(data_p$P6040 <= 18  , 1 , 0) 
 
@@ -106,7 +105,6 @@ data_p <- data_p %>%
 
 table(data_p$menores18)
 
-
 # dummy de madre soltera (mujer jefa de hogar sin pareja hombre, ojo: sin considerar si hay menores en la casa)
 data_p <- data_p %>% 
   group_by(id) %>%
@@ -114,7 +112,6 @@ data_p <- data_p %>%
 
 table(data_p$madre_soltera) 
 # comprobamos que todas las mujeres jefe de hogar no tienen una pareja hombre 
-
 
 #////////////////////////////////////////////////////////////////////
 # dummy de madre soltera y le agregamos hijos
@@ -143,7 +140,6 @@ data_p <- data_p %>%
 
 # P6426: tiempo trabajando en actividad principal
 # P6430: Rol en actividad principal
-
 
 #-----------------------------------------
 # Preguntas dummy de algún tipo de ingreso:
@@ -206,7 +202,6 @@ data_p <- data_p %>%
 data_p$Pet <- ifelse(is.na(data_p$Pet), 0 , data_p$Pet)
 table(data_p$Pet)
 
-
 # Proporción de la familia que trabaja (excluyendo a mayores de 18 años)
 data_p$Pet_mayores <- ifelse(data_p$Pet == 1 & data_p$P6040 >= 18 , 1 , 0)
 #///////////////////////////////////////////////////////////////////////////////// ojo acá podría usar "Ocupados" Oc
@@ -217,7 +212,6 @@ data_p <- data_p %>%
   group_by(id) %>%
   mutate(total_pet_mayores = sum(Pet_mayores)) %>%
   mutate(total_pet12 = sum(Pet))             
-
 
 # Cotiza actualmente en fondo de pensiones: P6920
 # Proporción de personas que tienen un trabajo formal hoy (proxy: cotizan hoy fondo de pensión)
@@ -337,3 +331,29 @@ summary(data_hog$tot_arriendo)
 sum(data_hog$Ingtotugarr - data_hog$Ingtotug == 0)
 
 sum(data_hog$ingtotutgarr) # QUEDA ESTA VARIABLE PARA PREDECIR.
+
+
+names(data_hog)
+
+
+
+# Limitamos el df a las variables que usaremos y las renombramos
+data_hog <- data_hog[, c('id', 'Clase', 'Dominio', 'Ingtotugarr',
+             'prop_multi_subsidios', 'prop_pet_mayores', 'prop_pet12', 
+             'prop_cotizan', 'prop_workers', 'per_bedrooms', 'tot_arriendo')]
+
+# Definimos los nombres de las columnas tal y como trabajaremos en el futuro.
+nombres_variables   <- c('id_hogar', 'cat_clase', 'cat_dominio', 
+                         'num_ingtotutgarr', 'nper_subsidios',
+                         'nper_pet_mayores', 'nper_pet12', 'nper_cotizan',
+                         'nper_workers', 'nper_bedrooms', 'nper_arriendo')
+
+colnames(data_hog) <- nombres_variables
+
+
+
+
+
+
+
+

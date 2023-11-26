@@ -5,3 +5,4 @@ stores/train_hogares.csv
 stores/train_personas.csv
 stores/test_personas.csv
 .Rproj.user
+stores/.DS_Store
