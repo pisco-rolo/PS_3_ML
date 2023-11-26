@@ -337,7 +337,7 @@ names(data_hog)
 
 
 
-# Limitamos el df a las variables que usaremos y las renombramos
+# Limitamos el df a las variables que usaremos y las renombramos para hogares
 data_hog <- data_hog[, c('id', 'Clase', 'Dominio', 'Ingtotugarr',
              'prop_multi_subsidios', 'prop_pet_mayores', 'prop_pet12', 
              'prop_cotizan', 'prop_workers', 'per_bedrooms', 'tot_arriendo')]
@@ -350,7 +350,25 @@ nombres_variables   <- c('id_hogar', 'cat_clase', 'cat_dominio',
 
 colnames(data_hog) <- nombres_variables
 
+# Limitamos el df a las variables que usaremos y las renombramos para personas
 
+# P6050: Parentezco con jefe de hogar
+names(data_p)
+data_p <- data_p[, c('id', 'Orden', 'Clase', 'Impa', 
+                       'Dominio', 'Ingtotob', 'P6800', 'Estrato1', 
+                       'P6020', 'P6040', 'P6090', 'P6210', 'P6430', 'P6585s2', 
+                       'P7500s1', 'P7500s3', 'P7510s3')]
+
+# Definimos los nombres de las columnas tal y como trabajaremos en el futuro.
+nombres_variables   <- c('id_hogar', 'id_persona', 'id_clase',
+                         'num_ingreso_monetario', 'cat_dominio','num_ing_tot',
+                         'num_horas_semana', 'cat_estrato', 'bin_sexo',
+                         'num_edad', 'bin_cotizante', 'cat_nivel_educativo',
+                         'cat_tipo_ocupación', 'bin_subsidio_transporte',
+                         'bin_pagos_real_state', 'bin_alimentos', 
+                         'cat_ayudas_gobierno')
+
+colnames(data_p) <- nombres_variables
 
 
 
