@@ -1,8 +1,24 @@
-
+# Archivos:
+# - De Excel.
 stores/sample_submission.csv
 stores/test_hogares.csv
 stores/train_hogares.csv
 stores/train_personas.csv
 stores/test_personas.csv
+references/Variables.xlsx
+
+# - De R.
+*.Rhistory
 .Rproj.user
-stores/.DS_Store
+*.DS_Store
+*.RDataTmp
+
+# - De LaTeX.
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.log
+*.out
+*.xml
+*.gz
