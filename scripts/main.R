@@ -13,7 +13,7 @@ set.seed(123)                       # Replicabilidad en las simulaciones.
 librerias    <- c('here', 'tidyverse', 'tidymodels', 'conflicted', 'xtable',
                   'gtsummary', 'gt', 'stringr', 'extrafont', 'xgboost',
                   'lightgbm', 'bonsai', 'vip', 'randomForest', 'rpart', 
-                  'baguette')
+                  'baguette', 'themis')
 noInstaladas <- librerias[!(librerias %in% rownames(installed.packages()))]
 
 if(length(noInstaladas)){
@@ -26,6 +26,8 @@ conflict_prefer(name = 'filter', winner = 'dplyr')
 conflict_prefer(name = 'slice', winner = 'dplyr')
 conflict_prefer(name = 'spec', winner = 'yardstick')
 conflict_prefer(name = 'step', winner = 'recipes')
+conflict_prefer(name = 'setdiff', winner = 'base')
+conflict_prefer(name = 'starts_with', winner = 'tidyselect')
 
 # 1.2| Directorio ---------------------------------------------------------
 directorioPrincipal  = enc2native(here())
@@ -38,12 +40,8 @@ setwd(directorioPrincipal)
 source(paste0(directorioCodigo, 'functions/cleaning.R'), encoding = 'UTF-8')
 
 # 2| Resultados -----------------------------------------------------------
-# Al definir 'primeraVez := TRUE', se realiza el análisis desde ceros. Esto
-# incluye descargar, nuevamente, la base de datos desde la página de Ignacio.
-# Dado que el proceso es demorado se recomienda definir el parámetro en FALSE.
+# Al definir 'primeraVez := TRUE', se realiza el análisis desde ceros. 
 primeraVez <- FALSE
-radio      <- 1500
-units(radio) <- 'm'
 source(paste0(directorioCodigo, '01_data_cleaning.R'), encoding = 'UTF-8')
-source(paste0(directorioCodigo, '02_imputation.R'), encoding = 'UTF-8')
-source(paste0(directorioCodigo, '03_forecast.R'), encoding = 'UTF-8')
+source(paste0(directorioCodigo, '02_classification.R'), encoding = 'UTF-8')
+source(paste0(directorioCodigo, '03_regression.R'), encoding = 'UTF-8')
