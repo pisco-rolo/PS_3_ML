@@ -349,7 +349,13 @@ data_cleaning_hogares <- function(.dataset, .old_var, .new_var) {
   .old_var <- .old_var[.old_var %in% colnames(.dataset)]
   .dataset <- .dataset |> 
     rename(!!!setNames(.old_var, .new_var)) |> 
-    mutate(num_cuartos_por_persona = num_cuartos/num_personas)
+    mutate(num_cuartos_por_persona = num_cuartos/num_personas) |> 
+    mutate(cat_propietario = factor(cat_propietario, 
+                                    levels = 1:6,
+                                    labels = c('Propia y pagada',
+                                               'Propia en proceso',
+                                               'Arriendo', 'Usufructo',
+                                               'Invasión', 'Otra')))
   
   return(.dataset)
 }

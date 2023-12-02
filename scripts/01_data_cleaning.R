@@ -22,7 +22,7 @@ if (primeraVez == TRUE) {
   # análisis a nivel de persona.
   resultado <- data_cleaning_personas(
     .dataset = data_p,
-    .old_var = c('id', 'ingtotes',  'p6020', 'p6040', 'p6050', 'p6090', 'p6210', 
+    .old_var = c('id', 'ingtot',  'p6020', 'p6040', 'p6050', 'p6090', 'p6210', 
                  'p6210s1', 'p6430', 'oc', 'des', 'ina', 'p6510', 'p6545', 
                  'p6585s1', 'p6585s2', 'p6585s3', 'p6585s4', 'p7495', 'p7505', 
                  'p7510s2', 'p7510s3', 'p7510s5', 'p6870'),
@@ -43,16 +43,17 @@ if (primeraVez == TRUE) {
   data_p <- resultado[[1]]
   data_hog <- data_cleaning_hogares(
     .dataset = data_hog,
-    .old_var = c('id', 'clase', 'dominio', 'p5010', 'npersug', 'ingtotugarr',
-                 'lp', 'pobre'),
+    .old_var = c('id', 'clase', 'dominio', 'p5010', 'p5090', 'p5130', 
+                 'npersug', 'ingtotugarr', 'lp', 'pobre'),
     .new_var = c('id_hogar', 'cat_zona', 'cat_ubicacion', 'num_cuartos', 
-                 'num_personas', 'num_ingreso_total', 'num_linea', 'bin_pobre')
+                 'cat_propietario', 'num_arriendo', 'num_personas', 
+                 'num_ingreso_total', 'num_linea', 'bin_pobre')
   ) |> left_join(y = resultado[[2]], by = 'id_hogar') 
   
   # 2.2| Datos de entrenamiento ---------------------------------------------
   resultado <- data_cleaning_personas(
     .dataset = data_kaggle_p,
-    .old_var = c('id', 'ingtotes',  'p6020', 'p6040', 'p6050', 'p6090', 'p6210', 
+    .old_var = c('id', 'ingtot',  'p6020', 'p6040', 'p6050', 'p6090', 'p6210', 
                  'p6210s1', 'p6430', 'oc', 'des', 'ina', 'p6510', 'p6545', 
                  'p6585s1', 'p6585s2', 'p6585s3', 'p6585s4', 'p7495', 'p7505', 
                  'p7510s2', 'p7510s3', 'p7510s5', 'p6870'),
@@ -73,10 +74,11 @@ if (primeraVez == TRUE) {
   data_kaggle_p <- resultado[[1]]
   data_kaggle_hog <- data_cleaning_hogares(
     .dataset = data_kaggle_hog,
-    .old_var = c('id', 'clase', 'dominio', 'p5010', 'npersug', 'ingtotugarr',
-                 'lp', 'pobre'),
+    .old_var = c('id', 'clase', 'dominio', 'p5010', 'p5090', 'p5130', 
+                 'npersug', 'ingtotugarr', 'lp', 'pobre'),
     .new_var = c('id_hogar', 'cat_zona', 'cat_ubicacion', 'num_cuartos', 
-                 'num_personas', 'num_ingreso_total', 'num_linea', 'bin_pobre')
+                 'cat_propietario', 'num_arriendo', 'num_personas', 
+                 'num_ingreso_total', 'num_linea', 'bin_pobre')
   ) |> left_join(y = resultado[[2]], by = 'id_hogar') 
   
   rm(resultado)
@@ -99,10 +101,6 @@ if (primeraVez == TRUE) {
 # 3| Estadística descriptiva ----------------------------------------------
 # Realizamos un ejercicio de estadística descriptiva antes de la imputación
 # de datos. Por ejemplo, la censura de datos atípicos.
-
-
-#  select(-c('id_hogar', 'num_latitud', 'num_longitud')) |> 
-
 estadistica_descriptiva <- data_hog |> 
   select(c(starts_with('num_'), starts_with('bin_'), starts_with('prop_'))) |>
   tbl_summary(include = everything(),
@@ -133,6 +131,3 @@ estadistica_descriptiva <- data_hog |>
 
 gtsave(as_gt(estadistica_descriptiva), 
        filename="views/estadisticaDescriptiva.tex")
-
-
-
