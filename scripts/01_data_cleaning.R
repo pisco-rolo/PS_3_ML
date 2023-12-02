@@ -83,3 +83,40 @@ rm(resultado)
 # 3| Estadística descriptiva ----------------------------------------------
 # Realizamos un ejercicio de estadística descriptiva antes de la imputación
 # de datos. Por ejemplo, la censura de datos atípicos.
+
+
+#  select(-c('id_hogar', 'num_latitud', 'num_longitud')) |> 
+
+estadistica_descriptiva <- data_hog |> 
+  select(c(starts_with('num_'), starts_with('bin_'), starts_with('prop_'))) |>
+  tbl_summary(include = everything(),
+              type = c(starts_with('prop_'),starts_with('num_')) ~ 'continuous2',
+              label = list(num_cuartos ~ 'Números de habitaciones',
+                           num_personas ~ 'Número de miembros del hogar',
+                           num_cuartos_por_persona ~ 'Total de habitaciones por persona',
+                           bin_mujer_y_jefaHogar ~ 'Dummy mujer jefe de hogar',
+                           bin_madre_soltera ~ 'Dummy madre soltera',
+                           num_edad_promedio ~ 'Edad promedio en el hogar',
+                           prop_hogarSubsidiado ~ 'Proporción de subsidios en el hogar',
+                           bin_hogar_ayudadoPorGobierno ~ 'Dummy ayuda del Gobierno' ,
+                           prop_hogarSubsidiado2 ~ 'Subsidios por miembros del hogar' ,
+                           prop_empleados ~ 'Proporción de empleados en el hogar' ,
+                           prop_empleados2 ~ 'Proporción empleados en el hogar v2' ,
+                           prop_empleados3 ~ 'Proporción empleados en el hogar v3' ,
+                           num_dependencia ~ 'Número de dependientes en el hogar' ),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "({min}, {max})"),
+                               all_categorical() ~ "{n}  ({p}%)"),  #  / {N}
+              missing_text = "(Valores faltantes)", 
+              sort = all_categorical() ~ "alphanumeric") |> 
+  add_stat_label(label = list(all_categorical() ~ "",
+                              all_continuous() ~ c("Promedio (Desviación std)",
+                                                   "Mínimo y máximo"))) |> 
+  modify_header(label = "**Variable**") |> 
+  bold_labels() 
+
+gtsave(as_gt(estadistica_descriptiva), 
+       filename="views/estadisticaDescriptiva.tex")
+
+
+
