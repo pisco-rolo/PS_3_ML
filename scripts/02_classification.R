@@ -1,18 +1,41 @@
+# Preparación -------------------------------------------------------------
+# Preparamos el equipo para procesamiento en paralelo.
+cl <- makePSOCKcluster(3)
+
 # 1| Predicción -----------------------------------------------------------
-# Definimos la semilla nuevamente en caso de ser necesaria.
+# Nota. En la base de datos original tenemos una distribución de 80% de hogares
+# no-pobres y 20% de hogares pobres. Al hacer la transformación, buscamos que
+# la distribución sea 66% y 33%.
+
+# Realizamos las modificaciones finales necesarias sobre las bases de datos.
 data_hog <- data_hog |> 
   mutate(bin_pobre = factor(bin_pobre),
          cat_zona = factor(cat_zona))
+
+data_kaggle_hog <- data_kaggle_hog |> 
+  mutate(cat_zona = factor(cat_zona))
+
+# Definimos la semilla nuevamente en caso de ser necesaria, de forma tal que
+# las particiones siempre sean las mismas.
+set.seed(2023)
+cross_validation <- vfold_cv(data = data_hog |> 
+                               select(-c('num_linea', 'num_ingreso_total')), 
+                             v = 4, strata = bin_pobre)
+
+# Definimos las métricas de evaluación. En particular, nos interesa la
+# entropía cruzada con pesos diferenciales en función del desbalance de clases,
+# así como el F1-score.
+# metrics <- metric_set(balanced_entropy, f_meas)
 
 # 1.1| XGBoost ------------------------------------------------------------
 # Definimos la grilla donde se buscarán los hiperparámetros que maximizan el
 # pronóstico por fuera de muestra.
 tune_grid_xgboost <- grid_regular(
-  tree_depth(range = c(1L, 8L), trans = NULL),
-  trees(range = c(100L, 2000L), trans = NULL),
-  learn_rate(range = c(-3, 1), trans = log10_trans()),
+  tree_depth(range = c(3L, 8L), trans = NULL),
+  trees(range = c(500L, 2000L), trans = NULL),
+  learn_rate(range = c(-3, -1), trans = log10_trans()),
   mtry(range = c(3L, 6L), trans = NULL),
-  levels = c(tree_depth = 4, trees = 5, learn_rate = 5, mtry = 2)
+  levels = c(tree_depth = 3, trees = 4, learn_rate = 3, mtry = 2)
 )
 
 # Definimos el motor del modelo. En particular, dejamos fijos algunos 
@@ -27,20 +50,21 @@ xgboost_model <- boost_tree(
   sample_size = .5
 ) |> 
   set_mode('classification') |> 
-  set_engine('xgboost')
-
-xgboost_model <- boost_tree(
-  tree_depth = 3, 
-  trees = 1525,
-  learn_rate = 0.3,
-  mtry = 3, 
-  min_n = 30,
-  loss_reduction = 0,
-  sample_size = .5
-) |> 
-  set_mode('classification') |> 
   set_engine('xgboost', objective = 'binary:logistic')
 
+# xgboost_model <- boost_tree(
+#   tree_depth = 3, 
+#   trees = 1525,
+#   learn_rate = 0.3,
+#   mtry = 3, 
+#   min_n = 30,
+#   loss_reduction = 0,
+#   sample_size = .5
+# ) |> 
+#   set_mode('classification') |> 
+#   set_engine('xgboost', objective = 'binary:logistic')
+
+# 1.1.1| Upsampling -------------------------------------------------------
 # La base de datos que entra no puede tener información de la línea de pobreza.
 # Por tanto, la eliminamos.
 recipe_xgboost <- recipe(bin_pobre ~ ., 
@@ -48,7 +72,8 @@ recipe_xgboost <- recipe(bin_pobre ~ .,
                            select(-c('num_linea', 'num_ingreso_total'))) |>
   update_role(id_hogar, new_role = 'ID') |> 
   step_dummy(all_nominal_predictors()) |>
-  step_rose(bin_pobre, over_ratio = 1)
+  # Con 'over_ratio = 1' hacemos que la 
+  step_upsample(bin_pobre, over_ratio = 1)
 
 # Definimos el flujo de trabajo, el cual consta de aplicar un modelo a una
 # receta (es decir, una selección dada de variables explicativas para una
@@ -57,20 +82,20 @@ wf_xgboost <- workflow() |>
   add_recipe(recipe_xgboost) |> 
   add_model(xgboost_model)
 
-set.seed(2023)
-cross_validation <- vfold_cv(data = data_hog |> 
-                               select(-c('num_linea', 'num_ingreso_total')), 
-                             v = 5, strata = bin_pobre)
-
 if (primeraVez == TRUE) {
   # Para cada combinación de parámetros, asignamos un valor del F1-score en la
   # validación cruzada con upsampling.
+  registerDoParallel(cl = cl)
+  
   tune_xgboost <- tune_grid(
     wf_xgboost,
     resamples = cross_validation,
-    grid = tune_grid_xgboost,
-    metrics = metric_set(f_meas)
+    grid      = tune_grid_xgboost,
+    metrics   = metric_set(f_meas), # La métrica de interés es el F1-score.
+    control   = control_grid(verbose = TRUE)
   )
+  
+  stopCluster(cl = cl)
   
   # El código tardó más de 3 horas en correr, por lo que es preferible no
   # ejecutarlo nuevamente. En su lugar, guardamos los resultados de los
@@ -123,8 +148,8 @@ if (primeraVez == TRUE) {
   prediccion <- tibble(
     id = data_kaggle_hog$id_hogar,
     pobre = predict(definitive_xgboost_fit, 
-                    new_data = data_kaggle_hog |> 
-                      mutate(cat_zona = factor(cat_zona))) |> 
+                    new_data = data_kaggle_hog,
+                    type = 'class') |> 
       _$.pred_class
   )
   
@@ -140,3 +165,19 @@ if (primeraVez == TRUE) {
   prediccion_xgboost <- read.csv(file = paste0(directorioResultados, 
                                                'xgboost_class_upsampling.csv'))
 }
+
+# 1.1.2| SMOTE ------------------------------------------------------------
+
+
+
+# 1.2| Logit con elastic net ----------------------------------------------
+
+
+
+# 1.3| Red neuronal -------------------------------------------------------
+
+
+
+# 4| Algoritmo más votado -------------------------------------------------
+
+

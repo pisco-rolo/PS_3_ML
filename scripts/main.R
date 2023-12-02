@@ -13,7 +13,7 @@ set.seed(123)                       # Replicabilidad en las simulaciones.
 librerias    <- c('here', 'tidyverse', 'tidymodels', 'conflicted', 'xtable',
                   'gtsummary', 'gt', 'stringr', 'extrafont', 'xgboost',
                   'lightgbm', 'bonsai', 'vip', 'randomForest', 'rpart', 
-                  'baguette', 'themis')
+                  'baguette', 'themis', 'doParallel')
 noInstaladas <- librerias[!(librerias %in% rownames(installed.packages()))]
 
 if(length(noInstaladas)){
