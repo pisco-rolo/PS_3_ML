@@ -156,7 +156,7 @@ if (primeraVez == TRUE) {
   # Nota. Dejamos comentada la exportación para no modificar el archivo que ya
   # publicamos en Kaggle.
   write.csv(x = prediccion,
-            file = paste0(directorioResultados, 'xgboost_class_upsampling.csv'),
+            file = paste0(directorioResultados, 'xgboost_class_upsampling_3.csv'),
             row.names = FALSE)
   
 } else {
