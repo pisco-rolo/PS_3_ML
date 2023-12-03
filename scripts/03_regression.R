@@ -233,3 +233,118 @@ if (primeraVez == TRUE) {
 # 1.3| Red neuronal -------------------------------------------------------
 
 
+set.seed(2023)
+split_data <- initial_split(data_hog |> select(-c('num_linea', 'num_ingreso_total')), 
+                            prop = 0.8, strata = bin_pobre)
+train_data <- training(split_data)
+test_data  <- testing(split_data)
+
+# El conjunto de entrenamiento lo partimos, nuevamente, para generar el 
+# conjunto de evaluación.
+split_data <- initial_split(train_data, prop = 0.8, strata = bin_pobre)
+train_data <- training(split_data)
+val_data   <- testing(split_data)
+
+# Separamos las variables predictoras y la variable objetivo.
+x_train <- train_data |> select(-c('id_hogar', 'bin_pobre'))
+y_train <- train_data |> pull(bin_pobre)
+x_val   <- val_data |> select(-c('id_hogar', 'bin_pobre'))
+y_val   <- val_data |> pull(bin_pobre)
+x_test  <- test_data |> select(-c('id_hogar', 'bin_pobre'))
+y_test  <- test_data |> pull(bin_pobre)
+
+# Normalizamos las variables numéricas.
+recipe_nn <- recipe(~ ., x_train) |>
+  step_novel(all_nominal_predictors()) |> 
+  step_dummy(all_nominal_predictors()) |>
+  step_zv(all_predictors()) |> 
+  # step_upsample(bin_pobre, over_ratio = 1) |> 
+  step_normalize(all_numeric_predictors())
+
+x_train <- as.matrix(prep(recipe_nn) |> bake(new_data = x_train))
+x_test  <- as.matrix(prep(recipe_nn) |> bake(new_data = x_test))
+x_val   <- as.matrix(prep(recipe_nn) |> bake(new_data = x_val))
+
+# Definimos variables de control.
+METRICS <- list(
+  metric_precision(name = 'precision'),
+  metric_recall(name = 'recall')
+)
+EPOCHS <- 30
+BATCH_SIZE <- 2048
+tf$random$set_seed(2023)
+early_stopping <- callback_early_stopping(monitor = 'val_loss', 
+                                          patience = 3,
+                                          restore_best_weights = TRUE)
+
+
+
+# arquitectura del modelo
+model <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = 'relu',
+              input_shape = dim(x_train)[2],
+              kernel_initializer = initializer_random_uniform()) %>%
+  layer_dropout(rate = 0.5) %>%
+  layer_dense(units = 1, activation = 'sigmoid')
+
+# el compilador del modelo
+model %>% compile(
+  optimizer = optimizer_adam(learning_rate = 1e-3),
+  loss = 'binary_crossentropy',
+  metrics = METRICS
+)
+
+# entrenamiento
+historia_modelo_basico <- model %>% fit(
+  x = x_train,
+  y = y_train,
+  batch_size = BATCH_SIZE,
+  epochs = EPOCHS,
+  validation_data = list(x_val, y_val),
+  verbose = 0,
+  seed = 12
+)
+
+
+# Evaluar el modelo
+results <- model %>% evaluate(x_test, y_test, verbose = 0)
+results
+
+
+#Calcular el F1_score
+f1_score <- 2*results['precision'] * results['recall']/(results['precision']+results['recall'])
+f1_score
+
+
+
+
+
+# TODO. Validar. Una idea es utilizar la predicción del modelo a nivel de
+# individuos y mezclarlo con el modelo a nivel de hogares, de forma tal
+# que usamos ambas fuentes de información.
+prediccion <- tibble(
+  id_hogar = data_kaggle_p$id_hogar,
+  num_edad = data_kaggle_p$num_edad,
+  num_ingreso_individual = predict(historia_modelo_basico, new_data = data_kaggle_p) |> 
+    _$.pred
+) |> 
+  mutate(num_ingreso_individual = case_when(num_edad <= 11 ~ 0,
+                                            num_ingreso_individual < 0 ~ 0,
+                                            TRUE ~ num_ingreso_individual))
+
+prediccion <- prediccion |> 
+  group_by(id_hogar) |>
+  summarise(num_ingreso_total = sum(num_ingreso_individual, na.rm = TRUE)) |> 
+  right_join(y = data_kaggle_hog, by = 'id_hogar') |> 
+  mutate(num_arriendo = case_when(is.na(num_arriendo) ~ 0,
+                                  TRUE ~ num_arriendo)) |> 
+  mutate(num_ingreso_total = num_ingreso_total + num_arriendo) |> 
+  mutate(pobre = as.numeric(num_ingreso_total < num_linea*num_personas)) |> 
+  select(c('id' = 'id_hogar', 'pobre'))
+
+# Nota. Dejamos comentada la exportación para no modificar el archivo que ya
+# publicamos en Kaggle.
+write.csv(x = prediccion,
+          file = paste0(directorioResultados, 'nn_reg_hip1.csv'),
+          row.names = FALSE)
+
