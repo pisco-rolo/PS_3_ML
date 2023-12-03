@@ -229,3 +229,7 @@ if (primeraVez == TRUE) {
   prediccion_xgboost <- read.csv(file = paste0(directorioResultados, 
                                                'xgboost_reg_hip1.csv'))
 }
+
+# 1.3| Red neuronal -------------------------------------------------------
+
+

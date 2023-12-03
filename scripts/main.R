@@ -10,10 +10,12 @@ options(scipen=999)
 set.seed(123)                       # Replicabilidad en las simulaciones.
 
 # 1.1| Librerias ----------------------------------------------------------
+# Nota. La instalación de 'rio' requiere de ejecutar 'install_formats()'.
 librerias    <- c('here', 'tidyverse', 'tidymodels', 'conflicted', 'xtable',
                   'gtsummary', 'gt', 'stringr', 'extrafont', 'xgboost',
                   'lightgbm', 'bonsai', 'vip', 'randomForest', 'rpart', 
-                  'baguette', 'themis', 'doParallel')
+                  'baguette', 'themis', 'doParallel', 'glmnet', 'keras', 'rio',
+                  'tensorflow')
 noInstaladas <- librerias[!(librerias %in% rownames(installed.packages()))]
 
 if(length(noInstaladas)){
