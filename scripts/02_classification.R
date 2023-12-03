@@ -339,6 +339,9 @@ if (primeraVez == TRUE) {
 }
 
 # 1.3| Red neuronal -------------------------------------------------------
+# TODO. La variable dependiente no puede ser un factor. Debe ser numérica para
+# que keras no tenga problema en la lectura. Luego, en el inicio del código
+# hay que tener cuidado, o modificarlo acá mismo.
 # Para las redes neuronales no contamos con validación cruzada, sino con un
 # enfoque de validación, donde crearemos:
 # - Conjuntos de entrenamiento, para estimar el modelo.
@@ -419,6 +422,21 @@ nn_model %>% fit(
 resultado_sesgo <- nn_model |> evaluate(x_test, y_test, verbose = FALSE)
 f1_score <- 2*resultado_sesgo['precision'] * resultado_sesgo['recall']/(resultado_sesgo['precision']+resultado_sesgo['recall'])
 as.numeric(f1_score)
+
+# Limpiamos los datos de evaluación.
+x_pred <- as.matrix(prep(recipe_nn) |> 
+                      bake(new_data = data_kaggle_hog |> select(-c('id_hogar'))))
+y_pred <- as.numeric(nn_model %>% predict(x_pred) %>% `>`(0.5))
+prediccion <- tibble(
+  id = data_kaggle_hog$id_hogar,
+  pobre = y_pred
+)
+
+# Nota. Dejamos comentada la exportación para no modificar el archivo que ya
+# publicamos en Kaggle.
+write.csv(x = prediccion,
+          file = paste0(directorioResultados, 'nn_denseRelu16_dp50_sigmoide.csv'),
+          row.names = FALSE)
 
 # 2| Algoritmo más votado -------------------------------------------------
 
