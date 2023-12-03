@@ -56,18 +56,6 @@ xgboost_model <- boost_tree(
   set_mode('classification') |> 
   set_engine('xgboost', objective = 'binary:logistic')
 
-xgboost_model <- boost_tree(
-  tree_depth = 3,
-  trees = 1525,
-  learn_rate = 0.3,
-  mtry = 3,
-  min_n = 30,
-  loss_reduction = 0,
-  sample_size = .5
-) |>
-  set_mode('classification') |>
-  set_engine('xgboost', objective = 'binary:logistic')
-
 # 1.1.1| Upsampling -------------------------------------------------------
 # La base de datos que entra no puede tener información de la línea de pobreza.
 # Por tanto, la eliminamos.
@@ -118,10 +106,6 @@ if (primeraVez == TRUE) {
                                 data   = data_hog |> 
                                   select(-c('num_linea', 'num_ingreso_total')))
   
-  definitive_xgboost_fit <- fit(object = wf_xgboost, 
-                                data   = data_hog |> 
-                                  select(-c('num_linea', 'num_ingreso_total')))
-  
   # Mostramos las variables más importantes para el boosting.
   base_exp     = 1
   heightExp    = 1
@@ -167,7 +151,7 @@ if (primeraVez == TRUE) {
   tune_xgboost <- readRDS(file = paste0(directorioDatos, 
                                         'optim_parms_class_upsampling_xgboost.rds'))
   prediccion_xgboost <- read.csv(file = paste0(directorioResultados, 
-                                               'xgboost_class_upsampling.csv'))
+                                               'xgboost_class_upsampling_2.csv'))
 }
 
 # 1.1.2| SMOTE ------------------------------------------------------------
@@ -209,7 +193,7 @@ if (primeraVez == TRUE) {
   # hiperparámetros y, con ellos (señalados en el 'submit' de Kaggle), 
   # realizamos una estimación de la muestra de evaluación.
   saveRDS(object = tune_xgboost,
-          file = paste0(directorioDatos, 'optim_parms_class_upsampling_xgboost.rds'))
+          file = paste0(directorioDatos, 'optim_parms_class_smote_xgboost.rds'))
   
   best_parms_xgboost <- select_best(tune_xgboost, metric = 'f_meas')
   definitive_xgboost <- finalize_workflow(
@@ -243,7 +227,7 @@ if (primeraVez == TRUE) {
     theme_classic() +
     theme(legend.position = "bottom")
   
-  nombreArchivo <- 'importancia_xgboost.png'
+  nombreArchivo <- 'importancia_xgboost_smote.png'
   ggsave(filename = paste0(directorioResultados, nombreArchivo), plot = graficaExportar,
          width = 6 * widthExp, height = 4 * heightExp * widthExp, scale = scale_factor)
   
@@ -268,9 +252,9 @@ if (primeraVez == TRUE) {
   
 } else {
   tune_xgboost <- readRDS(file = paste0(directorioDatos, 
-                                        'optim_parms_class_upsampling_xgboost.rds'))
+                                        'optim_parms_class_smote_xgboost.rds'))
   prediccion_xgboost <- read.csv(file = paste0(directorioResultados, 
-                                               'xgboost_class_upsampling.csv'))
+                                               'xgboost_class_smote.csv'))
 }
 
 # 1.2| Logit con elastic net ----------------------------------------------
@@ -281,6 +265,6 @@ if (primeraVez == TRUE) {
 
 
 
-# 4| Algoritmo más votado -------------------------------------------------
+# 2| Algoritmo más votado -------------------------------------------------
 
 

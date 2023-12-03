@@ -1,22 +1,21 @@
 # 1| Predicción -----------------------------------------------------------
-# Definimos la semilla nuevamente en caso de ser necesaria.
-data_hog <- data_hog |> 
-  mutate(bin_pobre = factor(bin_pobre),
-         cat_zona = factor(cat_zona))
+# Nota. En el problema de regresión no tenemos datos desbalanceados. En su 
+# lugar, la distribución del ingreso es asimétrica. Por consiguiente, no es 
+# necesario implementar una estrategia de sobre-muestreo para la clase 
+# minoritaria.
 
-#cuál es la proporción de hogares pobres con el total de hogares y cómo se 
-#distribuye a lo largo de los diferentes datasets
-table(data_hog$bin_pobre)
-table(data_hog$bin_pobre)/nrow(data_hog)
+# Realizamos las modificaciones finales necesarias sobre las bases de datos.
+# En particular, eliminamos valores de NA, correspondientes a infantes menores
+# de 11 años de edad.
+data_p <- data_p |> drop_na()
 
-
-data_p <- data_p %>% drop_na()
+# Definimos la semilla nuevamente en caso de ser necesaria, de forma tal que
+# las particiones siempre sean las mismas.
 set.seed(666)
-df_fold <- vfold_cv(data_p, v = 4)
+cross_validation <- vfold_cv(data_p, v = 4)
 
 # 1.1| Elastic net -------------------------------------------------------------------
 tune_grid_ridge <- grid_regular(
-  # La penalización va desde 0.0001 hasta 1,000.
   penalty(range = c(-2, 3), trans = log10_trans()), # Relacionado con la penalización a la función de pérdida.
   mixture(range = c(0, 1), trans = NULL), # Relacionado con la ponderación a Lasso.
   levels = c(penalty = 20, mixture = 20)
@@ -31,9 +30,6 @@ ridge_model <- linear_reg(
   set_mode("regression") |>
   set_engine("glmnet")
 
-#Se está entrenando con la variable de si es pobre
-#|> 
-#select(-c('num_linea', 'bin_pobre', 'cat_zona'))
 recipe_ridge <- recipe(num_ingreso_individual ~ .,
                        data = data_p) |> 
   update_role(id_hogar, new_role = 'id_hogar') |> 
@@ -49,19 +45,19 @@ wf_ridge <- workflow() |>
   add_recipe(recipe_ridge) |> 
   add_model(ridge_model)
 
-
 if (primeraVez == TRUE) {
+  # Para cada combinación de parámetros, asignamos un valor del RMSE.
   tune_ridge <- tune_grid(
     wf_ridge,
-    resamples = df_fold,
+    resamples = cross_validation,
     grid = tune_grid_ridge,
-    metrics = metric_set(mae)
+    metrics = metric_set(rmse)
   )
-  
+
   saveRDS(object = tune_ridge,
           file = paste0(directorioDatos, 'optim_parms_elasticnet_1.rds'))
   
-  best_parms_ridge <- select_best(tune_ridge, metric = 'mae')
+  best_parms_ridge <- select_best(tune_ridge, metric = 'rmse')
   definitive_ridge <- finalize_workflow(
     x = wf_ridge,
     parameters = best_parms_ridge
@@ -70,136 +66,41 @@ if (primeraVez == TRUE) {
   definitive_ridge_fit <- fit(object = definitive_ridge,
                               data   = data_p)
   
-  # Evaluamos el MAE de la validación cruzada para tener una noción del error
+  # TODO. Corregir con los valores encontrados.
+  # Evaluamos el RMSE de la validación cruzada para tener una noción del error
   # que podríamos encontrar. En particular, el error es cercano a los 192.1', 
   # calculado con el MAE, y tiene una desviación estándar de 5.2'. 
-  tune_ridge |> show_best(metric = 'mae', n = 5) 
+  tune_ridge |> show_best(metric = 'rmse', n = 5) 
   
   prediccion <- tibble(
     id_hogar = data_kaggle_p$id_hogar,
     num_edad = data_kaggle_p$num_edad,
     num_ingreso_individual = predict(definitive_ridge_fit, new_data = data_kaggle_p) |> 
       _$.pred
-  ) %>% 
+  ) |> 
     mutate(num_ingreso_individual = case_when(num_edad <= 11 ~ 0,
                                               num_ingreso_individual < 0 ~ 0,
                                               TRUE ~ num_ingreso_individual))
   
-  prediccion <- prediccion %>% 
-    group_by(id_hogar) %>%
-    summarise(num_ingreso_total = sum(num_ingreso_individual, na.rm = TRUE)) %>% 
-    right_join(y = data_kaggle_hog, by = 'id_hogar') %>% 
+  prediccion <- prediccion |> 
+    group_by(id_hogar) |>
+    summarise(num_ingreso_total = sum(num_ingreso_individual, na.rm = TRUE)) |> 
+    right_join(y = data_kaggle_hog, by = 'id_hogar') |> 
     mutate(num_arriendo = case_when(is.na(num_arriendo) ~ 0,
-                                    TRUE ~ num_arriendo)) %>% 
-    mutate(num_ingreso_total = num_ingreso_total + num_arriendo) %>% 
-    mutate(pobre = as.numeric(num_ingreso_total < num_linea*num_personas)) %>% 
+                                    TRUE ~ num_arriendo)) |> 
+    mutate(num_ingreso_total = num_ingreso_total + num_arriendo) |> 
+    mutate(pobre = as.numeric(num_ingreso_total < num_linea*num_personas)) |> 
     select(c('id' = 'id_hogar', 'pobre'))
   
-  # Nota. Dejamos comentada la exportación para no modificar el archivo que ya
-  # publicamos en Kaggle.
   write.csv(x = prediccion,
             file = paste0(directorioResultados, 'elasticnet_reg_hip1.csv'),
             row.names = FALSE)
   
 } else {
   tune_ridge <- readRDS(file = paste0(directorioDatos,
-                                      'optim_parms_ridge_1.rds'))
+                                      'optim_parms_elasticnet_1.rds'))
   prediccion_ridge <- read.csv(file = paste0(directorioResultados, 
-                                             'ridge_imp1_hip2.csv'))
-}
-
-
-# 1.1| Ridge -------------------------------------------------------------------
-tune_grid_ridge <- grid_regular(
-  # La penalización va desde 0.0001 hasta 1,000.
-  penalty(range = c(-2, 3), trans = log10_trans()), # Relacionado con la penalización a la función de pérdida.
-  levels  = 20
-)
-
-ridge_model <- linear_reg(
-  # Mixture 0 implica que se le da 0% de ponderación a Lasso y, por tanto,
-  # la estimación es meramente un Ridge.
-  mixture = 0,
-  penalty = tune()
-) |>
-  set_mode("regression") |>
-  set_engine("glmnet")
-
-#Se está entrenando con la variable de si es pobre
-#|> 
-#select(-c('num_linea', 'bin_pobre', 'cat_zona'))
-recipe_ridge <- recipe(num_ingreso_individual ~ .,
-                       data = data_p) |> 
-  update_role(id_hogar, new_role = 'id_hogar') |> 
-  # Una muestra de entrenamiento puede no tener todas las localidades, por lo 
-  # que es necesario que se asigne categorías anteriormente no vistas a la
-  # categoría 'new'.
-  step_novel(all_nominal_predictors()) |> 
-  step_dummy(all_nominal_predictors()) |> 
-  step_zv(all_predictors()) |> 
-  step_normalize(all_predictors())
-
-wf_ridge <- workflow() |> 
-  add_recipe(recipe_ridge) |> 
-  add_model(ridge_model)
-
-
-if (primeraVez == TRUE) {
-  tune_ridge <- tune_grid(
-    wf_ridge,
-    resamples = df_fold,
-    grid = tune_grid_ridge,
-    metrics = metric_set(mae)
-  )
-  
-  saveRDS(object = tune_ridge,
-          file = paste0(directorioDatos, 'optim_parms_ridge_1.rds'))
-  
-  best_parms_ridge <- select_best(tune_ridge, metric = 'mae')
-  definitive_ridge <- finalize_workflow(
-    x = wf_ridge,
-    parameters = best_parms_ridge
-  )
-  
-  definitive_ridge_fit <- fit(object = definitive_ridge,
-                              data   = data_p)
-  
-  # Evaluamos el MAE de la validación cruzada para tener una noción del error
-  # que podríamos encontrar. En particular, el error es cercano a los 192.1', 
-  # calculado con el MAE, y tiene una desviación estándar de 5.2'. 
-  tune_ridge |> show_best(metric = 'mae', n = 5) 
-  
-  prediccion <- tibble(
-    id_hogar = data_kaggle_p$id_hogar,
-    num_edad = data_kaggle_p$num_edad,
-    num_ingreso_individual = predict(definitive_ridge_fit, new_data = data_kaggle_p) |> 
-      _$.pred
-  ) %>% 
-    mutate(num_ingreso_individual = case_when(num_edad <= 11 ~ 0,
-                                              num_ingreso_individual < 0 ~ 0,
-                                              TRUE ~ num_ingreso_individual))
-  
-  prediccion <- prediccion %>% 
-    group_by(id_hogar) %>%
-    summarise(num_ingreso_total = sum(num_ingreso_individual, na.rm = TRUE)) %>% 
-    right_join(y = data_kaggle_hog, by = 'id_hogar') %>% 
-    mutate(num_arriendo = case_when(is.na(num_arriendo) ~ 0,
-                                    TRUE ~ num_arriendo)) %>% 
-    mutate(num_ingreso_total = num_ingreso_total + num_arriendo) %>% 
-    mutate(pobre = as.numeric(num_ingreso_total < num_linea*num_personas)) %>% 
-    select(c('id' = 'id_hogar', 'pobre'))
-  
-  # Nota. Dejamos comentada la exportación para no modificar el archivo que ya
-  # publicamos en Kaggle.
-  write.csv(x = prediccion,
-            file = paste0(directorioResultados, 'ridge_imp1_hip1.csv'),
-            row.names = FALSE)
-  
-} else {
-  tune_ridge <- readRDS(file = paste0(directorioDatos,
-                                      'optim_parms_ridge_1.rds'))
-  prediccion_ridge <- read.csv(file = paste0(directorioResultados, 
-                                             'ridge_imp1_hip2.csv'))
+                                             'elasticnet_reg_hip1.csv'))
 }
 
 # 1.2| xgboost ------------------------------------------------------------
@@ -227,18 +128,6 @@ xgboost_model <- boost_tree(
   set_mode('regression') |> 
   set_engine('xgboost', objective = 'reg:squarederror')
 
- xgboost_model <- boost_tree(
-   tree_depth = 3, 
-   trees = 1525,
-   learn_rate = 0.3,
-   mtry = 3, 
-   min_n = 30,
-   loss_reduction = 0,
-   sample_size = .5
- ) |> 
-   set_mode('regression') |> 
-   set_engine('xgboost', objective = 'reg:squarederror')
-
 # La base de datos que entra no puede tener un campo de geometría porque la
 # implementación no lo permite. Por tanto, la eliminamos.
 recipe_xgboost <- recipe(num_ingreso_individual ~ .,
@@ -254,21 +143,24 @@ wf_xgboost <- workflow() |>
   add_model(xgboost_model)
 
 if (primeraVez == TRUE) {
-  # Para cada combinación de parámetros, asignamos un valor de MAE en la
-  # validación cruzada por bloques espaciales.
+  # Para cada combinación de parámetros, asignamos un valor del RMSE.
+  registerDoParallel(cl = cl) 
+  
   tune_xgboost <- tune_grid(
     wf_xgboost,
-    resamples = df_fold,
+    resamples = cross_validation,
     grid = tune_grid_xgboost,
-    metrics = metric_set(mae)
+    metrics = metric_set(rmse)
   )
+  
+  stopCluster(cl = cl)
   
   # El código tardó más de 3 horas en correr, por lo que es preferible no
   # ejecutarlo nuevamente. En su lugar, guardamos los resultados de los
   # hiperparámetros y, con ellos (señalados en el 'submit' de Kaggle), 
   # realizamos una estimación de la muestra de evaluación.
   saveRDS(object = tune_xgboost,
-          file = paste0(directorioDatos, 'optim_parms_xgboost_2.rds'))
+          file = paste0(directorioDatos, 'optim_parms_reg_xgboost.rds'))
   
   best_parms_xgboost <- select_best(tune_xgboost, metric = 'mae')
   definitive_xgboost <- finalize_workflow(
@@ -278,8 +170,6 @@ if (primeraVez == TRUE) {
   
   definitive_xgboost_fit <- fit(object = definitive_xgboost, 
                                 data   = dataset)
-  definitive_xgboost_fit <- fit(object = wf_xgboost, 
-                                data   = data_p)  
   # Mostramos las variables más importantes para el boosting.
   base_exp     = 1
   heightExp    = 1
@@ -302,22 +192,6 @@ if (primeraVez == TRUE) {
   ggsave(filename = paste0(directorioResultados, nombreArchivo), plot = graficaExportar,
          width = 6 * widthExp, height = 4 * heightExp * widthExp, scale = scale_factor)
   
-  # - Variables originales. Evaluamos el MAE de la validación cruzada para 
-  #   tener una noción del error que podríamos encontrar. En particular, el 
-  #   error es cercano a los 156.7', calculado con el MAE, y tiene una 
-  #   desviación estándar de 5.4'. 
-  # - Extensión. Evaluamos el MAE de la validación cruzada para 
-  #   tener una noción del error que podríamos encontrar. En particular, el 
-  #   error es cercano a los 156.3', calculado con el MAE, y tiene una 
-  #   desviación estándar de 5.1'. Por tanto, hay una mejora en la predicción
-  #   al incluir variables relacionadas con la remodelación, el walking closet,
-  #   y si el edificio tiene ascensor o no. 
-  prediccion <- tibble(
-    id_hogar = dataset$id_hogar,
-    precio_obs = dataset$num_precio,
-    precio_est = predict(definitive_xgboost_fit, new_data = dataset) |> _$.pred
-  )
-  
   tune_xgboost |> show_best(metric = 'mae', n = 5) 
   
   # Finalmente, generamos la predicción de los datos por fuera de muestra y
@@ -328,22 +202,21 @@ if (primeraVez == TRUE) {
     num_edad = data_kaggle_p$num_edad,
     num_ingreso_individual = predict(definitive_xgboost_fit, new_data = data_kaggle_p) |> 
       _$.pred
-  ) %>% 
+  ) |> 
     mutate(num_ingreso_individual = case_when(num_edad <= 11 ~ 0,
                                               num_ingreso_individual < 0 ~ 0,
                                               TRUE ~ num_ingreso_individual))
   
-  prediccion <- prediccion %>% 
-    group_by(id_hogar) %>%
-    summarise(num_ingreso_total = sum(num_ingreso_individual, na.rm = TRUE)) %>% 
-    right_join(y = data_kaggle_hog, by = 'id_hogar') %>% 
+  prediccion <- prediccion |> 
+    group_by(id_hogar) |>
+    summarise(num_ingreso_total = sum(num_ingreso_individual, na.rm = TRUE)) |> 
+    right_join(y = data_kaggle_hog, by = 'id_hogar') |> 
     mutate(num_arriendo = case_when(is.na(num_arriendo) ~ 0,
-                                    TRUE ~ num_arriendo)) %>% 
-    mutate(num_ingreso_total = num_ingreso_total + num_arriendo) %>% 
-    mutate(pobre = as.numeric(num_ingreso_total < num_linea*num_personas)) %>% 
+                                    TRUE ~ num_arriendo)) |> 
+    mutate(num_ingreso_total = num_ingreso_total + num_arriendo) |> 
+    mutate(pobre = as.numeric(num_ingreso_total < num_linea*num_personas)) |> 
     select(c('id' = 'id_hogar', 'pobre'))
   
-  table(prediccion$pobre)
   # Nota. Dejamos comentada la exportación para no modificar el archivo que ya
   # publicamos en Kaggle.
   write.csv(x = prediccion,
@@ -352,12 +225,7 @@ if (primeraVez == TRUE) {
   
 } else {
   tune_xgboost <- readRDS(file = paste0(directorioDatos, 
-                                        'optim_parms_xgboost_2.rds'))
+                                        'optim_parms_reg_xgboost.rds'))
   prediccion_xgboost <- read.csv(file = paste0(directorioResultados, 
-                                               'xgboost_imp1_hip2.csv'))
+                                               'xgboost_reg_hip1.csv'))
 }
-
-
-
-
-
