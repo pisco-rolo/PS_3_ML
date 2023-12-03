@@ -394,21 +394,24 @@ early_stopping <- callback_early_stopping(monitor = 'val_loss',
 # Para entrenar el modelo utilizamos el sesgo inicial.
 initial_bias <- log(as.numeric(sum(y_train == 1))/as.numeric(sum(y_train == 0)))
 
-nn_model <- keras_model_sequential() %>%
+# Aclaración. Keras es distinto al manejo de objetos que se da en R típicamente.
+# Si bien es necesario definir el objeto que contiene al modelo al inicio, cosas
+# como definir la compilación no requieren de sobreescribir el objeto. 
+nn_model <- keras_model_sequential() |>
   layer_dense(units = 16, activation = 'relu',
               input_shape = dim(x_train)[2],
-              kernel_initializer = initializer_random_uniform()) %>%
-  layer_dropout(rate = 0.5) %>%
+              kernel_initializer = initializer_random_uniform()) |>
+  layer_dropout(rate = 0.5) |>
   layer_dense(units = 1, activation = 'sigmoid',
               bias_initializer = initializer_constant(value = initial_bias))
 
-nn_model %>% compile(
+nn_model |> compile(
   optimizer = optimizer_adam(learning_rate = 1e-3),
   loss = 'binary_crossentropy',
   metrics = METRICS
 )
 
-nn_model %>% fit(
+nn_model |> fit(
   x = x_train,
   y = y_train,
   batch_size = BATCH_SIZE,
@@ -426,7 +429,7 @@ as.numeric(f1_score)
 # Limpiamos los datos de evaluación.
 x_pred <- as.matrix(prep(recipe_nn) |> 
                       bake(new_data = data_kaggle_hog |> select(-c('id_hogar'))))
-y_pred <- as.numeric(nn_model %>% predict(x_pred) %>% `>`(0.5))
+y_pred <- as.numeric(nn_model |> predict(x_pred) |> `>`(0.5))
 prediccion <- tibble(
   id = data_kaggle_hog$id_hogar,
   pobre = y_pred

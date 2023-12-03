@@ -194,9 +194,9 @@ if (primeraVez == TRUE) {
   
   tune_xgboost |> show_best(metric = 'rmse', n = 5) 
   
-  # Finalmente, generamos la predicción de los datos por fuera de muestra y
-  # guardamos los resultados para Kaggle. Con este modelo, el error es cercano
-  # a los 207' por fuera de muestra, calculado con el MAE.
+  # TODO. Validar. Una idea es utilizar la predicción del modelo a nivel de
+  # individuos y mezclarlo con el modelo a nivel de hogares, de forma tal
+  # que usamos ambas fuentes de información.
   prediccion <- tibble(
     id_hogar = data_kaggle_p$id_hogar,
     num_edad = data_kaggle_p$num_edad,
