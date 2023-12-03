@@ -162,14 +162,14 @@ if (primeraVez == TRUE) {
   saveRDS(object = tune_xgboost,
           file = paste0(directorioDatos, 'optim_parms_reg_xgboost.rds'))
   
-  best_parms_xgboost <- select_best(tune_xgboost, metric = 'mae')
+  best_parms_xgboost <- select_best(tune_xgboost, metric = 'rmse')
   definitive_xgboost <- finalize_workflow(
     x = wf_xgboost, 
     parameters = best_parms_xgboost
   )
   
   definitive_xgboost_fit <- fit(object = definitive_xgboost, 
-                                data   = dataset)
+                                data   = data_p)
   # Mostramos las variables más importantes para el boosting.
   base_exp     = 1
   heightExp    = 1
@@ -188,11 +188,11 @@ if (primeraVez == TRUE) {
     theme_classic() +
     theme(legend.position = "bottom")
   
-  nombreArchivo <- 'importancia_xgboost.png'
+  nombreArchivo <- 'importancia_xgboost_reg.png'
   ggsave(filename = paste0(directorioResultados, nombreArchivo), plot = graficaExportar,
          width = 6 * widthExp, height = 4 * heightExp * widthExp, scale = scale_factor)
   
-  tune_xgboost |> show_best(metric = 'mae', n = 5) 
+  tune_xgboost |> show_best(metric = 'rmse', n = 5) 
   
   # Finalmente, generamos la predicción de los datos por fuera de muestra y
   # guardamos los resultados para Kaggle. Con este modelo, el error es cercano
