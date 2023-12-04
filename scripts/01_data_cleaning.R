@@ -103,6 +103,7 @@ if (primeraVez == TRUE) {
 # de datos. Por ejemplo, la censura de datos atípicos.
 summary(data_hog)
 
+# Datos a nivel de hogar
 data_hog <- data_hog |> 
   mutate(num_arriendo = ifelse(num_arriendo >20000000, 20000000, num_arriendo ))
 
@@ -140,3 +141,49 @@ estadistica_descriptiva <- data_hog |>
 
 gtsave(as_gt(estadistica_descriptiva), 
        filename="views/estadisticaDescriptiva.tex")
+
+#-------------------------------------------
+# Nivel persona
+
+estadistica_descriptiva2 <- data_p |> 
+  select(c(starts_with('num_'), starts_with('bin_'), starts_with('cat_'))) |>
+  select(-c('num_experiencia2')) |>
+  tbl_summary(include = everything(),
+              type = starts_with('num_') ~ 'continuous2',
+              label = list(num_ingreso_individual ~ 'Ingreso individual' ,
+                           num_edad ~ 'Edad' ,
+                           bin_mujer ~ 'Dummy mujer',
+                           cat_parentesco ~ 'Parentesco jefe de hogar',
+                           bin_cotizante ~ 'Dummy cotizante',
+                           cat_educacion ~ 'Nivel Educativo',
+                           num_educacion ~ 'Grado escolar aprobado',
+                           cat_ocupacion ~ 'Ocupación actividad principal',
+                           bin_ocupado ~ 'Dummy ocupado',
+                           bin_desocupado ~ 'Dummy desocupado',
+                           bin_inactivo ~ 'Dummy inactivo' ,
+                           bin_ingresoAdicional_horasExtra ~ 'Dummy ingreso adicional horas extra',
+                           bin_ingresoAdicional_prima ~ 'Dummy ingreso adicional prima',
+                           bin_ingresoAdicional_alimentacion ~ 'Dummy ingreso adicional alimentación' ,
+                           bin_ingresoAdicional_transporte ~ 'Dummy ingreso adicional transporte', 
+                           bin_ingresoAdicional_auxilio ~ 'Dummy ingreso adicional auxilio',
+                           bin_ingresoAdicional_educacion ~ 'Dummy ingreso adicional educación' ,
+                           bin_ingresoAdicional_realEstate ~ 'Dummy ingreso adicional alquileres',
+                           bin_ingresoAdicional_rendimientosFinancieros ~ 'Dummy ingreso adicional rendimientos financieros',
+                           bin_ingresoAdicional_transferenciasInternacionales ~ 'Dummy ingreso adicional transferencias internacionales',
+                           bin_ingresoAdicional_ayudasGobierno ~ 'Dummy ingreso adicional ayudas Gobierno',
+                           bin_ingresoAdicional_rendimientosFinancieros2 ~ 'Dummy otros ingresos financieros',
+                           cat_tamanoEmpresa ~ 'Tamaño de empresa', 
+                           num_experiencia ~ 'Años de experiencia'         ),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "({min}, {max})"),
+                               all_categorical() ~ "{n}  ({p}%)"),  #  / {N}
+              missing_text = "(Valores faltantes)", 
+              sort = all_categorical() ~ "alphanumeric") |> 
+  add_stat_label(label = list(all_categorical() ~ "",
+                              all_continuous() ~ c("Promedio (Desviación std)",
+                                                   "Mínimo y máximo"))) |> 
+  modify_header(label = "**Variable**") |> 
+  bold_labels() 
+
+gtsave(as_gt(estadistica_descriptiva2), 
+       filename="views/estadisticaDescriptiva2.tex")
