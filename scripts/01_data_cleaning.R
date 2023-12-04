@@ -101,6 +101,11 @@ if (primeraVez == TRUE) {
 # 3| Estadística descriptiva ----------------------------------------------
 # Realizamos un ejercicio de estadística descriptiva antes de la imputación
 # de datos. Por ejemplo, la censura de datos atípicos.
+summary(data_hog)
+
+data_hog <- data_hog |> 
+  mutate(num_arriendo = ifelse(num_arriendo >20000000, 20000000, num_arriendo ))
+
 estadistica_descriptiva <- data_hog |> 
   select(c(starts_with('num_'), starts_with('bin_'), starts_with('prop_'))) |>
   tbl_summary(include = everything(),
@@ -108,15 +113,19 @@ estadistica_descriptiva <- data_hog |>
               label = list(num_cuartos ~ 'Números de habitaciones',
                            num_personas ~ 'Número de miembros del hogar',
                            num_cuartos_por_persona ~ 'Total de habitaciones por persona',
+                           num_ingreso_total ~ 'Ingreso total del hogar',
+                           num_arriendo ~ 'Costo arriendo',
+                           num_linea ~ 'Línea de pobreza',
+                           bin_pobre ~ 'Dummy de pobreza',
                            bin_mujer_y_jefaHogar ~ 'Dummy mujer jefe de hogar',
                            bin_madre_soltera ~ 'Dummy madre soltera',
                            num_edad_promedio ~ 'Edad promedio en el hogar',
                            prop_hogarSubsidiado ~ 'Proporción de subsidios en el hogar',
                            bin_hogar_ayudadoPorGobierno ~ 'Dummy ayuda del Gobierno' ,
                            prop_hogarSubsidiado2 ~ 'Subsidios por miembros del hogar' ,
-                           prop_empleados ~ 'Proporción de empleados en el hogar' ,
-                           prop_empleados2 ~ 'Proporción empleados en el hogar v2' ,
-                           prop_empleados3 ~ 'Proporción empleados en el hogar v3' ,
+                           prop_empleados ~ 'Proporción de empleados en el hogar incluye menores' ,
+                           prop_empleados2 ~ 'Proporción empleados en el hogar sin menores' ,
+                           prop_empleados3 ~ 'Proporción empleados cotizantes en el hogar incluye menores' ,
                            num_dependencia ~ 'Número de dependientes en el hogar' ),
               statistic = list(all_continuous() ~ c("{mean} ({sd})",
                                                     "({min}, {max})"),
