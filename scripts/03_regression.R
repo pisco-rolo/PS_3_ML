@@ -231,27 +231,24 @@ if (primeraVez == TRUE) {
 }
 
 # 1.3| Red neuronal -------------------------------------------------------
-
-
 set.seed(2023)
-split_data <- initial_split(data_hog |> select(-c('num_linea', 'num_ingreso_total')), 
-                            prop = 0.8, strata = bin_pobre)
+split_data <- initial_split(data_p, prop = 0.8)
 train_data <- training(split_data)
 test_data  <- testing(split_data)
 
 # El conjunto de entrenamiento lo partimos, nuevamente, para generar el 
 # conjunto de evaluación.
-split_data <- initial_split(train_data, prop = 0.8, strata = bin_pobre)
+split_data <- initial_split(train_data, prop = 0.8)
 train_data <- training(split_data)
 val_data   <- testing(split_data)
 
 # Separamos las variables predictoras y la variable objetivo.
-x_train <- train_data |> select(-c('id_hogar', 'bin_pobre'))
-y_train <- train_data |> pull(bin_pobre)
-x_val   <- val_data |> select(-c('id_hogar', 'bin_pobre'))
-y_val   <- val_data |> pull(bin_pobre)
-x_test  <- test_data |> select(-c('id_hogar', 'bin_pobre'))
-y_test  <- test_data |> pull(bin_pobre)
+x_train <- train_data |> select(-c('id_hogar', 'num_ingreso_individual'))
+y_train <- train_data |> pull(num_ingreso_individual)
+x_val   <- val_data |> select(-c('id_hogar', 'num_ingreso_individual'))
+y_val   <- val_data |> pull(num_ingreso_individual)
+x_test  <- test_data |> select(-c('id_hogar', 'num_ingreso_individual'))
+y_test  <- test_data |> pull(num_ingreso_individual)
 
 # Normalizamos las variables numéricas.
 recipe_nn <- recipe(~ ., x_train) |>
@@ -267,8 +264,7 @@ x_val   <- as.matrix(prep(recipe_nn) |> bake(new_data = x_val))
 
 # Definimos variables de control.
 METRICS <- list(
-  metric_precision(name = 'precision'),
-  metric_recall(name = 'recall')
+  metric_root_mean_squared_error(name = 'rmse')
 )
 EPOCHS <- 30
 BATCH_SIZE <- 2048
@@ -277,57 +273,49 @@ early_stopping <- callback_early_stopping(monitor = 'val_loss',
                                           patience = 3,
                                           restore_best_weights = TRUE)
 
-
-
 # arquitectura del modelo
 model <- keras_model_sequential() %>%
-  layer_dense(units = 16, activation = 'relu',
+  layer_dense(units = 64, activation = 'relu',
               input_shape = dim(x_train)[2],
               kernel_initializer = initializer_random_uniform()) %>%
+  layer_dense(units = 64, activation = 'sigmoid',
+              # input_shape = dim(x_train)[2],
+              kernel_initializer = initializer_random_uniform()) %>%
   layer_dropout(rate = 0.5) %>%
-  layer_dense(units = 1, activation = 'sigmoid')
+  layer_dense(units = 1, activation = 'relu')
 
 # el compilador del modelo
 model %>% compile(
   optimizer = optimizer_adam(learning_rate = 1e-3),
-  loss = 'binary_crossentropy',
+  loss = 'mean_squared_error',
   metrics = METRICS
 )
 
 # entrenamiento
-historia_modelo_basico <- model %>% fit(
+model %>% fit(
   x = x_train,
   y = y_train,
   batch_size = BATCH_SIZE,
   epochs = EPOCHS,
   validation_data = list(x_val, y_val),
   verbose = 0,
-  seed = 12
+  seed = 12,
+  callbacks = list(early_stopping)
 )
-
 
 # Evaluar el modelo
 results <- model %>% evaluate(x_test, y_test, verbose = 0)
 results
 
-
-#Calcular el F1_score
-f1_score <- 2*results['precision'] * results['recall']/(results['precision']+results['recall'])
-f1_score
-
-
-
-
-
 # TODO. Validar. Una idea es utilizar la predicción del modelo a nivel de
 # individuos y mezclarlo con el modelo a nivel de hogares, de forma tal
 # que usamos ambas fuentes de información.
+x_pred <- as.matrix(prep(recipe_nn) |> 
+                      bake(new_data = data_kaggle_p |> select(-c('id_hogar'))))
 prediccion <- tibble(
   id_hogar = data_kaggle_p$id_hogar,
   num_edad = data_kaggle_p$num_edad,
-  num_ingreso_individual = predict(historia_modelo_basico, new_data = data_kaggle_p) |> 
-    _$.pred
-) |> 
+  num_ingreso_individual = as.numeric(model |> predict(x_pred))) |> 
   mutate(num_ingreso_individual = case_when(num_edad <= 11 ~ 0,
                                             num_ingreso_individual < 0 ~ 0,
                                             TRUE ~ num_ingreso_individual))
